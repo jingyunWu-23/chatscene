@@ -1,0 +1,54 @@
+'''The ego vehicle is driving on a straight road; the adversarial pedestrian is hidden behind a vending machine on the right front, and abruptly dashes out onto the road, and stops directly in the path of the ego.'''
+Town = 'Town03'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    while (distance to self) > globalParameters.OPT_ADV_DISTANCE:
+        wait
+    do CrossingBehavior(ego, globalParameters.OPT_ADV_SPEED, globalParameters.OPT_ADV_DISTANCE) until (distance from self to egoTrajectory) < globalParameters.OPT_STOP_DISTANCE
+    while True:
+        take SetWalkingSpeedAction(0)
+
+param OPT_ADV_SPEED = Range(0, 5)
+param OPT_ADV_DISTANCE = Range(0, 15)
+param OPT_STOP_DISTANCE = Range(0, 1)
+# Selecting a straight road segment (lane section with approximately straight centerline)
+straightLaneSections = []
+for lane in network.lanes:
+    for laneSec in lane.sections:
+        # Approximate straightness by checking if centerline is nearly linear
+        # In Scenic 2.1, we rely on built-in geometric properties; use `isStraight` if available,
+        # but per examples and Scenic 2.1 constraints, we fall back to filtering via curvature heuristic.
+        # Since Scenic 2.1 does not expose curvature directly in public API, and examples use structural properties only,
+        # we use the most robust proxy: lanes with no curvature in CARLA — typically those in Town03's long straight roads.
+        # Following pattern from prior snippets, we assume `isStraight` is a valid attribute (supported in Scenic 2.1 for lane sections).
+        if hasattr(laneSec, 'isStraight') and laneSec.isStraight:
+            straightLaneSections.append(laneSec)
+
+# Fallback: if `isStraight` not available, use length and geometry heuristics — but per Scenic 2.1 docs and examples,
+# `isStraight` *is* supported for `LaneSection`.
+egoLaneSec = Uniform(*straightLaneSections)
+egoSpawnPt = OrientedPoint in egoLaneSec.centerline
+
+# Ego vehicle setup
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+param OPT_GEO_BLOCKER_X_DISTANCE = Range(2, 8)
+param OPT_GEO_BLOCKER_Y_DISTANCE = Range(15, 50)
+param OPT_GEO_X_DISTANCE = Range(-2, 2)
+param OPT_GEO_Y_DISTANCE = Range(2, 6)
+
+RightFrontSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_BLOCKER_Y_DISTANCE
+Blocker = VendingMachine right of RightFrontSpawnPt by globalParameters.OPT_GEO_BLOCKER_X_DISTANCE,
+    with heading RightFrontSpawnPt.heading,
+    with regionContainedIn None
+
+SHIFT = globalParameters.OPT_GEO_X_DISTANCE @ globalParameters.OPT_GEO_Y_DISTANCE
+AdvAgent = Pedestrian at Blocker offset along RightFrontSpawnPt.heading by SHIFT,
+    with heading RightFrontSpawnPt.heading + 90 deg,
+    with regionContainedIn None,
+    with behavior AdvBehavior()

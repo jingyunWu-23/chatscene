@@ -1,0 +1,46 @@
+'''The ego vehicle is going straight through the intersection; the adversarial vehicle approaches from the left front and cuts off the ego vehicle.'''
+Town = 'Town05'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    while (distance to self) > 60:
+        wait  # The adversarial car waits until it is within 60 meters of the ego vehicle.
+    do FollowLaneBehavior(target_speed=globalParameters.OPT_ADV_SPEED) until (distance to self) < globalParameters.OPT_ADV_DISTANCE
+    # Approaches from left front → perform a rightward lane change *into* ego's current lane (i.e., cut off from left)
+    # Since it's coming from left front, it must be in the lane immediately left of ego's lane; switch right into ego's lane.
+    do LaneChangeBehavior(laneSectionToSwitch=network.laneSectionAt(ego), target_speed=globalParameters.OPT_ADV_SPEED, direction='right')
+
+param OPT_ADV_SPEED = Range(0, 20)  # Controls the speed of the adversarial vehicle.
+param OPT_ADV_DISTANCE = Range(10, 30)  # The distance at which the adversarial vehicle initiates the cut-off maneuver.
+intersection = Uniform(*filter(lambda i: i.is4Way, network.intersections))
+egoInitLane = Uniform(*intersection.incomingLanes)
+egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.STRAIGHT, egoInitLane.maneuvers))
+egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+egoSpawnPt = OrientedPoint in egoManeuver.startLane.centerline
+
+# Setting up the ego vehicle at the initial position
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+
+require 10 <= (distance to intersection) <= 40
+# Defining adversarial maneuvers as those conflicting with the ego's straight path
+advManeuvers = filter(lambda i: i.type == ManeuverType.STRAIGHT, egoManeuver.conflictingManeuvers)
+advManeuver = Uniform(*advManeuvers)
+advTrajectory = [advManeuver.startLane, advManeuver.endLane]
+advSpawnPt = advManeuver.startLane.centerline[0]  # Initial point on the start lane's centerline
+IntSpawnPt = advManeuver.startLane.centerline.start  # Start of the start lane centerline
+
+param OPT_GEO_Y_DISTANCE = Range(-10, 10)
+# Setting up the adversarial agent
+AdvAgent = Car following roadDirection from IntSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE,
+    with heading IntSpawnPt.heading,
+    with regionContainedIn None,
+    with behavior AdvBehavior()
+
+# Requirements to ensure the adversarial agent's relative position and trajectory are correctly aligned with the scenario's needs
+require -110 deg <= RelativeHeading(AdvAgent) <= -70 deg  # Ensuring the agent approaches from the left leg (i.e., ~90 deg left of ego's forward direction)
+require any([AdvAgent.position in traj for traj in [advManeuver.startLane, advManeuver.endLane]])

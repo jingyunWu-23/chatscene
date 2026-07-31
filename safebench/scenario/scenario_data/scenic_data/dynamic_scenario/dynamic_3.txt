@@ -1,0 +1,54 @@
+'''The ego vehicle is driving on a straight road; the adversarial pedestrian appears from a driveway on the left and suddenly stop and walk diagonally.'''
+Town = 'Town03'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    # Wait until ego is close enough to trigger emergence
+    while (distance to self) > globalParameters.OPT_ADV_DISTANCE:
+        wait
+    # Suddenly emerge: set diagonal walking direction and speed
+    direction = self.heading + globalParameters.OPT_ADV_DEGREE deg
+    take SetWalkingDirectionAction(direction)
+    take SetWalkingSpeedAction(globalParameters.OPT_ADV_SPEED)
+    # Walk until within stopping distance of ego's trajectory
+    do WaitAction() until (distance from self to egoTrajectory) < globalParameters.OPT_STOP_DISTANCE
+    # Abrupt stop
+    while True:
+        take SetWalkingSpeedAction(0)
+
+param OPT_ADV_SPEED = Range(0, 5)
+param OPT_ADV_DISTANCE = Range(0, 15)
+param OPT_ADV_DEGREE = Range(-90, 90)
+param OPT_STOP_DISTANCE = Range(0, 1)
+# Selecting a straight lane section from the network
+straightLaneSecs = []
+for lane in network.lanes:
+    for laneSec in lane.sections:
+        if laneSec.isStraight:
+            straightLaneSecs.append(laneSec)
+
+egoLaneSec = Uniform(*straightLaneSecs)
+egoSpawnPt = OrientedPoint in egoLaneSec.centerline
+
+# Ego vehicle setup
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+param OPT_DRAVWAY_BLOCKER_X_DISTANCE = Range(-4, -1)  # Negative for left side
+param OPT_DRAVWAY_BLOCKER_Y_DISTANCE = Range(10, 35)
+param OPT_DRAVWAY_X_DISTANCE = Range(-2, 2)
+param OPT_DRAVWAY_Y_DISTANCE = Range(1, 4)
+
+LeftFrontSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_DRAVWAY_BLOCKER_Y_DISTANCE
+Blocker = ATM left of LeftFrontSpawnPt by globalParameters.OPT_DRAVWAY_BLOCKER_X_DISTANCE,
+    with heading LeftFrontSpawnPt.heading,
+    with regionContainedIn None
+
+SHIFT = globalParameters.OPT_DRAVWAY_X_DISTANCE @ globalParameters.OPT_DRAVWAY_Y_DISTANCE
+AdvAgent = Pedestrian at Blocker offset along LeftFrontSpawnPt.heading by SHIFT,
+    with heading LeftFrontSpawnPt.heading - 90 deg,  # Facing into road from left (driveway ingress)
+    with regionContainedIn None,
+    with behavior AdvBehavior()

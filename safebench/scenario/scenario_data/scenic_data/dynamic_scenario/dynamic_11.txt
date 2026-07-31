@@ -1,0 +1,65 @@
+'''The ego vehicle is changing to the right lane; the adversarial car is driving parallel to the ego and blocking its path.'''
+Town = 'Town03'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+param OPT_ADV_SPEED = Range(0, 20)
+param OPT_ADV_DISTANCE = Range(10, 30)
+param OPT_BLOCK_OFFSET = Range(-2.0, 2.0)  # Lateral offset to maintain parallel blocking position relative to ego.
+
+behavior AdvBehavior():
+    while (distance to self) > 60:
+        wait  # Wait until ego is within interaction range.
+
+    do FollowLaneBehavior(target_speed=globalParameters.OPT_ADV_SPEED) until (distance to self) < globalParameters.OPT_ADV_DISTANCE
+
+    while True:
+        # Maintain parallel trajectory by matching ego's lateral position with small offset,
+        # staying in same lane or adjacent lane as needed to block lane change.
+        targetLaneSec = network.laneSectionAt(ego).laneSectionAt(ego.position + (globalParameters.OPT_BLOCK_OFFSET @ 0))
+        if targetLaneSec != network.laneSectionAt(self):
+            do LaneChangeBehavior(laneSectionToSwitch=targetLaneSec, target_speed=globalParameters.OPT_ADV_SPEED)
+        else:
+            wait
+# Identifying lane sections with at least two adjacent lanes moving in the same forward direction
+laneSecsWithTwoAdjacent = []
+for lane in network.lanes:
+    for laneSec in lane.sections:
+        leftLane = laneSec._laneToLeft
+        rightLane = laneSec._laneToRight
+        hasLeft = leftLane is not None and leftLane.isForward == laneSec.isForward
+        hasRight = rightLane is not None and rightLane.isForward == laneSec.isForward
+        if hasLeft and hasRight:
+            laneSecsWithTwoAdjacent.append(laneSec)
+
+# Selecting a random lane section from identified sections for the ego vehicle
+egoLaneSec = Uniform(*laneSecsWithTwoAdjacent)
+egoSpawnPt = OrientedPoint in egoLaneSec.centerline
+
+# Ego vehicle setup
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+# Parameters for scenario elements
+param OPT_LATERAL_OFFSET = Range(0.5, 2.0)  # Small lateral offset to ensure right-lane placement while aligning longitudinally
+param OPT_LONGITUDINAL_OFFSET = Range(-5, 5)  # Slight fore/aft variation to model "approximately same forward position"
+
+# Identify the adjacent lane to the right
+laneSec = network.laneSectionAt(ego)
+advLane = laneSec._laneToRight.lane
+
+# Compute a point aligned longitudinally with egoSpawnPt but shifted into the right lane
+# Use egoSpawnPt's position projected onto advLane's centerline for longitudinal alignment
+projectedOnAdvLane = Vector(*advLane.centerline.project(egoSpawnPt.position).coords[0])
+# Apply small longitudinal jitter if needed (optional, but consistent with prior use of offsets)
+IntSpawnPt = OrientedPoint at projectedOnAdvLane offset along roadDirection by globalParameters.OPT_LONGITUDINAL_OFFSET
+projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
+advHeading = advLane.orientation[projectPt]
+
+# Spawn the Adversarial Agent in the right lane, aligned longitudinally with ego
+AdvAgent = Car at projectPt,
+    with heading advHeading,
+    with regionContainedIn None,
+    with behavior AdvBehavior()

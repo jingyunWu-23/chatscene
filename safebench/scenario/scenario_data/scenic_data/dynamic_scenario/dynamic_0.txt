@@ -1,0 +1,42 @@
+'''The ego vehicle is driving on a straight road when a pedestrian suddenly crosses from the right front and suddenly stops as the ego vehicle approaches.'''
+Town = 'Town03'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    do CrossingBehavior(ego, globalParameters.OPT_ADV_SPEED, globalParameters.OPT_ADV_DISTANCE) until (distance from self to egoTrajectory) < globalParameters.OPT_STOP_DISTANCE
+    while True:
+        take SetWalkingSpeedAction(0)
+
+param OPT_ADV_SPEED = Range(0, 5)
+param OPT_ADV_DISTANCE = Range(0, 15)
+param OPT_STOP_DISTANCE = Range(0, 1)
+# Selecting a random lane section from the network for a straight road
+egoLaneSec = Uniform(*network.laneSections)
+egoSpawnPt = OrientedPoint in egoLaneSec.centerline
+
+# Ego vehicle setup
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+param OPT_GEO_X_DISTANCE = Range(2, 8)   # lateral distance from ego's right side (sidewalk/roadside offset)
+param OPT_GEO_Y_DISTANCE = Range(5, 20)  # longitudinal distance ahead of ego where agent steps onto road
+
+# Spawn adversarial agent initially on sidewalk/roadside to the right of ego
+# Use egoSpawnPt as reference; offset right and slightly ahead to place on sidewalk
+SidewalkSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
+AdvSpawnPt = SidewalkSpawnPt right of SidewalkSpawnPt by globalParameters.OPT_GEO_X_DISTANCE
+
+# Adversarial agent steps onto road directly in front of ego — i.e., same heading as road, positioned at road centerline
+# Project spawn point onto nearest lane centerline (rightmost lane or ego's lane, depending on context);
+# but since agent steps *onto road directly in front*, we target the lane centerline aligned with ego's forward direction
+roadLane = network.laneSectionAt(egoSpawnPt)._lane  # lane ego is in (or nearest)
+projectedPos = Vector(*roadLane.centerline.project(egoSpawnPt.position + egoSpawnPt.headingVector * globalParameters.OPT_GEO_Y_DISTANCE).coords[0])
+roadHeading = roadLane.orientation[projectedPos]
+
+AdvAgent = Pedestrian at projectedPos,
+    with heading roadHeading,
+    with regionContainedIn None,
+    with behavior AdvBehavior()

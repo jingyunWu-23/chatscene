@@ -1,0 +1,49 @@
+'''The ego vehicle is turning left at an intersection; the adversarial pedestrian on the opposite sidewalk suddenly crosses the road from the right front and stops in the middle of the intersection.'''
+Town = 'Town05'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    do CrossingBehavior(ego, globalParameters.OPT_ADV_SPEED, globalParameters.OPT_ADV_DISTANCE) until (distance from self to egoTrajectory) < globalParameters.OPT_STOP_DISTANCE
+    while True:
+        take SetWalkingSpeedAction(0)
+
+param OPT_ADV_SPEED = Range(0, 5)
+param OPT_ADV_DISTANCE = Range(0, 15)
+param OPT_STOP_DISTANCE = Range(0, 1)
+intersection = Uniform(*filter(lambda i: i.is4Way, network.intersections))
+egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.LEFT_TURN, intersection.maneuvers))
+egoInitLane = egoManeuver.startLane
+egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+egoSpawnPt = OrientedPoint in egoInitLane.centerline
+
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+param OPT_GEO_X_DISTANCE = Range(2, 8)
+param OPT_GEO_Y_DISTANCE = Range(-5, 5)
+
+# Get the right-front point relative to ego's *current* position and heading (not lane end/start)
+IntSpawnPt = OrientedPoint following egoSpawnPt.heading from egoSpawnPt for globalParameters.OPT_GEO_X_DISTANCE
+SHIFT = 0 @ globalParameters.OPT_GEO_Y_DISTANCE
+# Offset perpendicularly to the right (i.e., +90 deg relative to ego's heading) to land on opposite sidewalk
+# Since ego is turning, and adversarial agent spawns from *opposite sidewalk*, we interpret "right front" 
+# as offset to ego's right (positive y in ego's local frame), then project onto sidewalk geometry.
+# But Scenic 2.1 lacks direct sidewalk access — so we approximate using road geometry:
+# Opposite sidewalk is typically ~3–5m laterally across the road from ego's lane centerline.
+# Use ego's current heading and lateral offset to place on far side of road.
+
+# Compute point on opposite side of road: shift perpendicular to ego's heading by fixed lateral gap (~4m)
+# Then adjust forward along heading to be in "front" quadrant.
+OppositeSidewalkPt = egoSpawnPt offset along egoSpawnPt.heading by globalParameters.OPT_GEO_X_DISTANCE \
+                     offset along (egoSpawnPt.heading + 90 deg) by 4
+
+# Refine spawn to ensure it's on pedestrian-accessible area — use offset from road edge or sidewalk approximation
+# Since no explicit sidewalk object exists in base Scenic 2.1 CARLA model, we assume adversarial agent (e.g., Pedestrian) 
+# spawns just off-road, on the right-front quadrant, facing into intersection.
+AdvAgent = Pedestrian at OppositeSidewalkPt,
+    with heading egoSpawnPt.heading - 90 deg,  # facing toward ego's path (i.e., crossing leftward across ego's turn)
+    with regionContainedIn None,
+    with behavior AdvBehavior()

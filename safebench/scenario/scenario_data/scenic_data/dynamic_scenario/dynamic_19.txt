@@ -1,0 +1,54 @@
+'''The ego encounters a parked car blocking its lane and must use the opposite lane to bypass the vehicle when an oncoming car suddenly accelerates, closing the gap for the ego to safely return to its lane, necessitating the ego to quickly decide whether to accelerate or brake to avoid a collision.'''
+Town = 'Town01'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    while (distance to self) > 60:
+        wait  # The adversarial car waits until it is within 60 meters of the ego vehicle.
+    do FollowLaneBehavior(globalParameters.OPT_ADV_SPEED) until (distance to self) < globalParameters.OPT_ADV_DISTANCE
+    while True:
+        take SetThrottleAction(globalParameters.OPT_ADV_THROTTLE)  # Aggressively accelerates to close the gap and block lane return.
+
+param OPT_ADV_SPEED = Range(0, 15)  # Controls the initial speed of the adversarial car.
+param OPT_ADV_DISTANCE = Range(10, 25)  # Specifies the distance at which the car begins its aggressive blocking maneuver.
+param OPT_ADV_THROTTLE = Range(0.7, 1)  # Determines the intensity of the acceleration to prevent safe lane return.
+# Collecting lane sections that have a left lane (opposite traffic direction) and no right lane (single forward road)
+laneSecsWithLeftLane = []
+for lane in network.lanes:
+    for laneSec in lane.sections:
+        if laneSec._laneToLeft is not None and laneSec._laneToRight is None:
+            if laneSec._laneToLeft.isForward != laneSec.isForward:
+                laneSecsWithLeftLane.append(laneSec)
+
+# Selecting a random lane section that matches the criteria
+egoLaneSec = Uniform(*laneSecsWithLeftLane)
+egoSpawnPt = OrientedPoint in egoLaneSec.centerline
+
+# Ego vehicle setup
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+# Parameters for scenario elements
+param OPT_GEO_Y_DISTANCE = Range(10, 40)  # Distance ahead in the ego's current (bypass) lane where adversarial agent spawns
+param OPT_GEO_X_OFFSET = Range(-2, 2)      # Small lateral offset to ensure precise lane alignment
+
+# Identify the lane the ego is currently in (i.e., the lane it used to bypass the parked car)
+# Since the ego has *entered* a lane to bypass a parked car, that lane is now its current lane.
+# We assume `ego` is already placed and moving in that bypass lane; thus:
+egoLaneSec = network.laneSectionAt(ego)
+# The adversarial agent comes from the *oncoming direction* in the *same lane* — i.e., opposite heading, same geometric lane.
+# In CARLA/Scenic road models, oncoming traffic in undivided roads often uses the same lane centerline but opposite heading.
+# So we spawn the adversarial agent ahead along the *reverse* of ego's forward direction, in ego's current lane.
+
+IntSpawnPt = OrientedPoint following -roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
+projectPt = Vector(*egoLaneSec.lane.centerline.project(IntSpawnPt.position).coords[0])
+advHeading = egoLaneSec.lane.orientation[projectPt] + 180 deg  # Flip heading to face oncoming direction
+
+# Spawn the adversarial agent in the same lane, facing opposite direction (oncoming)
+AdvAgent = Car at projectPt,
+    with heading advHeading,
+    with regionContainedIn None,
+    with behavior AdvBehavior()

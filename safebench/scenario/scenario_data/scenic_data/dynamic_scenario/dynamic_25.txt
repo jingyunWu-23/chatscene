@@ -1,0 +1,61 @@
+'''The ego starts an unprotected left turn at an intersection while yielding to an oncoming car when the oncoming car's throttle malfunctions, leading to an unexpected acceleration and forcing the ego to quickly modify its turning path to avoid a collision.'''
+Town = 'Town05'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    while (distance to self) > 60:
+        wait  # The adversarial vehicle waits until it is close enough to impact the ego's maneuver.
+    do FollowTrajectoryBehavior(globalParameters.OPT_ADV_SPEED, advTrajectory) until (distance to self) < globalParameters.OPT_ADV_DISTANCE
+    # Unexpectedly accelerates due to throttle malfunction — no condition-based trigger, just immediate sustained acceleration.
+    while True:
+        take SetThrottleAction(globalParameters.OPT_THROTTLE)
+
+param OPT_ADV_SPEED = Range(5, 15)  # The speed at which the adversarial vehicle approaches and enters the intersection.
+param OPT_ADV_DISTANCE = Range(0, 20)  # Distance threshold at which the malfunction-induced acceleration begins.
+param OPT_THROTTLE = Range(0.7, 1.0)  # High throttle intensity reflecting a malfunction (no gradual ramp-up, full or near-full throttle).
+
+## MONITORS
+monitor TrafficLights:
+    freezeTrafficLights()
+    while True:
+        if withinDistanceToTrafficLight(ego, 100):
+            setClosestTrafficLightStatus(ego, "green")
+        if withinDistanceToTrafficLight(AdvAgent, 100):
+            setClosestTrafficLightStatus(AdvAgent, "green")
+        wait
+
+intersection = Uniform(*filter(lambda i: i.is4Way and i.isSignalized, network.intersections))
+egoInitLane = Uniform(*intersection.incomingLanes)
+egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.LEFT_TURN, egoInitLane.maneuvers))
+egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+egoSpawnPt = OrientedPoint in egoManeuver.startLane.centerline
+
+# Setting up the ego vehicle at the initial position
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+
+require 10 <= (distance to intersection) <= 40
+# Parameters for scenario elements
+param OPT_GEO_X_DISTANCE = Range(-8, 0)  # Lateral offset toward left (i.e., front-left relative to ego's heading)
+param OPT_GEO_Y_DISTANCE = Range(10, 30)  # Longitudinal distance ahead along ego's heading
+
+# Identify the oncoming lane: assuming ego is in a bidirectional road, the left adjacent lane is often the oncoming lane
+# (consistent with prior snippet where _laneToLeft was used for oncoming traffic)
+laneSec = network.laneSectionAt(ego)
+advLane = laneSec._laneToLeft.lane
+
+# Define spawn point ahead of ego along its heading, then offset laterally into the oncoming lane
+IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
+SHIFT = globalParameters.OPT_GEO_X_DISTANCE @ globalParameters.OPT_GEO_Y_DISTANCE
+projectPt = Vector(*advLane.centerline.project((IntSpawnPt.position + SHIFT).coords[0]).coords[0])
+advHeading = advLane.orientation[projectPt]
+
+# Spawn the Adversarial Agent
+AdvAgent = Car at projectPt,
+    with heading advHeading,
+    with regionContainedIn None,
+    with behavior AdvBehavior()

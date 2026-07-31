@@ -1,0 +1,61 @@
+'''The ego encounters a parked car blocking its lane and must use the opposite lane to bypass the vehicle, carefully assessing the situation and yielding to oncoming traffic, when an oncoming motorcyclist swerves into the lane unexpectedly, necessitating the ego to brake or maneuver to avoid a potential accident.'''
+Town = 'Town01'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    swerveCompleted = False
+    try:
+        do FollowLaneBehavior(target_speed=globalParameters.OPT_ADV_SPEED)
+    interrupt when (distance from self to ego) < globalParameters.OPT_SWERVE_TRIGGER_DISTANCE and not swerveCompleted:
+        # Identify the opposite lane — assumed to be the lane used for bypassing parked cars,
+        # which in CARLA typically corresponds to the lane in the opposite direction of traffic.
+        # Since Scenic 2.1 does not expose "opposite lane" directly, we infer it via laneSection's _oppositeLaneSection
+        current_laneSection = network.laneSectionAt(self)
+        OppositeLaneSec = current_laneSection._oppositeLaneSection
+        # Ensure the opposite lane section exists and is drivable
+        if OppositeLaneSec is not None and OppositeLaneSec.drivable:
+            do LaneChangeBehavior(
+                laneSectionToSwitch=OppositeLaneSec,
+                target_speed=globalParameters.OPT_ADV_SPEED)
+        swerveCompleted = True
+
+param OPT_ADV_SPEED = Range(5, 30)  # Speed of the adversarial motorcyclist before swerving.
+param OPT_SWERVE_TRIGGER_DISTANCE = Range(5, 25)  # Distance from ego at which the swerve is triggered.
+# Collecting lane sections that have a left lane (opposite traffic direction) and no right lane (single forward road)
+laneSecsWithLeftLane = []
+for lane in network.lanes:
+    for laneSec in lane.sections:
+        if laneSec._laneToLeft is not None and laneSec._laneToRight is None:
+            if laneSec._laneToLeft.isForward != laneSec.isForward:
+                laneSecsWithLeftLane.append(laneSec)
+
+# Selecting a random lane section that matches the criteria
+egoLaneSec = Uniform(*laneSecsWithLeftLane)
+egoSpawnPt = OrientedPoint in egoLaneSec.centerline
+
+# Ego vehicle setup
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+# Parameters for scenario elements
+param OPT_GEO_Y_DISTANCE = Range(10, 40)  # Distance ahead in the opposite lane where adversarial agent spawns
+
+# Identify the opposite (oncoming) lane — same physical lane the ego would use to bypass, i.e., the lane ego is *not* currently in but would enter
+# Since ego is driving forward in its current lane, the "opposite lane" for oncoming traffic is typically _laneToLeft in left-hand traffic,
+# but Scenic's `network.laneSectionAt(ego)` gives local lane topology; we assume standard right-hand traffic where oncoming is _laneToLeft
+# (consistent with first example's use of `_laneToLeft` for oncoming)
+advLane = network.laneSectionAt(ego)._laneToLeft.lane
+
+# Spawn point ahead along ego's direction, then project onto opposite lane's centerline
+IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
+projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
+advHeading = advLane.orientation[projectPt]
+
+# Adversarial motorcyclist spawns in the oncoming lane (no blocker — description states "no prior obstruction")
+AdvAgent = Motorcycle at projectPt,
+    with heading advHeading + 180 deg,  # Facing opposite direction → oncoming traffic
+    with regionContainedIn None,
+    with behavior AdvBehavior()

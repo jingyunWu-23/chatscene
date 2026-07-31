@@ -1,0 +1,68 @@
+'''The ego vehicle is preparing to change lanes to evade a slow-moving leading vehicle; the adversarial car in the target lane starts weaving between lanes, making it difficult for the ego vehicle to predict its position and safely execute the lane change.'''
+Town = 'Town03'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+param OPT_ADV_SPEED = Range(5, 15)
+param OPT_ADV_DISTANCE = Range(0, 20)
+param OPT_WAIT_STEPS = Range(0, 20)
+
+behavior AdvBehavior():
+    while True:
+        do FollowLaneBehavior(target_speed=globalParameters.OPT_ADV_SPEED) until distance to self < globalParameters.OPT_ADV_DISTANCE
+        
+        # Perform unpredictable weaving: choose any adjacent lane (if available) and switch
+        adjacentLanes = network.laneSectionAt(self).adjacentLanes
+        if len(adjacentLanes) > 0:
+            # Randomly select one of the adjacent lanes (Scenic 2.1 supports `any` over lists for nondeterministic choice)
+            targetLaneSec = any adjacentLanes
+            do LaneChangeBehavior(laneSectionToSwitch=targetLaneSec, target_speed=globalParameters.OPT_ADV_SPEED)
+        
+        # Wait a variable number of steps before next action
+        for _ in range(globalParameters.OPT_WAIT_STEPS):
+            wait
+# Identifying lane sections with at least one adjacent parallel lane in the same direction
+# (i.e., either a left lane or right lane moving in the same forward direction)
+laneSecsWithParallelLane = []
+for lane in network.lanes:
+    for laneSec in lane.sections:
+        hasParallelLeft = (laneSec._laneToLeft is not None and 
+                           laneSec._laneToLeft.isForward == laneSec.isForward)
+        hasParallelRight = (laneSec._laneToRight is not None and 
+                            laneSec._laneToRight.isForward == laneSec.isForward)
+        if hasParallelLeft or hasParallelRight:
+            laneSecsWithParallelLane.append(laneSec)
+
+# Selecting a random lane section from identified sections for the ego vehicle
+egoLaneSec = Uniform(*laneSecsWithParallelLane)
+egoSpawnPt = OrientedPoint in egoLaneSec.centerline
+
+# Ego vehicle setup
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+# Parameters for adversarial agent's lateral maneuver and positioning
+param OPT_ADV_LATERAL_OFFSET = Range(-2.5, 2.5)  # Lateral offset relative to ego's centerline (negative = left, positive = right)
+param OPT_ADV_LONGITUDINAL_DISTANCE = Range(0, 25)  # Distance ahead of ego along road direction
+param OPT_ADV_MANEUVER_SPEED = Range(0.5, 3)  # Lateral maneuver speed (m/s), used in behavior logic (not position)
+
+# Determine target lane based on intended maneuver: assume scenario logic selects left or right via external parameter
+# Since description says "right or left, depending on the ego’s intended direction", we use a param to choose lane
+param OPT_TARGET_LANE = Enum('left', 'right')
+advLane = (
+    network.laneSectionAt(ego)._laneToLeft.lane if globalParameters.OPT_TARGET_LANE == 'left'
+    else network.laneSectionAt(ego)._laneToRight.lane
+)
+
+# Spawn point aligned longitudinally with ego but laterally shifted into target lane
+IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_ADV_LONGITUDINAL_DISTANCE
+projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
+advHeading = advLane.orientation[projectPt]
+
+# Spawn the Adversarial Agent in the target lane, directly ahead along road — no blocker needed (agent is active, not obstructing)
+AdvAgent = Car at projectPt,
+    with heading advHeading,
+    with regionContainedIn None,
+    with behavior AdvBehavior()

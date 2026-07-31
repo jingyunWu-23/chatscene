@@ -1,0 +1,52 @@
+'''The ego attempts an unprotected left turn at an intersection while yielding to an oncoming car when the oncoming car veer erratically.'''
+Town = 'Town05'
+param map = localPath(f'../maps/{Town}.xodr') 
+param carla_map = Town
+model scenic.simulators.carla.model
+EGO_MODEL = "vehicle.lincoln.mkz_2017"
+
+behavior AdvBehavior():
+    while (distance to self) > 60:
+        wait  # The adversarial vehicle waits until it is close enough to influence the ego's maneuver.
+    # Initiates erratic steering maneuvers immediately upon entering the critical approach zone.
+    for steer in globalParameters.STEER_LIST:
+        take SetSpeedAction(self.speed), SetSteerAction(steer)  # Applies a series of random steering adjustments while maintaining speed.
+
+param OPT_ADV_SPEED = Range(5, 15)  # The speed at which the adversarial vehicle approaches the intersection.
+param STEER_LIST = [Range(-globalParameters.OPT_STEER, globalParameters.OPT_STEER) for i in range(1000)]  # List of random steering angles.
+param OPT_STEER = Range(0.3, 1.0)  # Magnitude range for erratic steering perturbations.
+intersection = Uniform(*filter(lambda i: i.is4Way and not i.isSignalized, network.intersections))
+egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.LEFT_TURN, intersection.maneuvers))
+egoInitLane = egoManeuver.startLane
+egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+egoSpawnPt = OrientedPoint in egoInitLane.centerline
+
+ego = Car at egoSpawnPt,
+    with regionContainedIn None,
+    with blueprint EGO_MODEL
+# Parameters for scenario elements
+param OPT_GEO_Y_DISTANCE = Range(10, 40)  # Distance ahead along ego's road direction to define reference point
+param OPT_GEO_X_OFFSET = Range(-2, 2)      # Lateral offset to position agent slightly left of exact opposite (front-left relative to ego's turning path)
+
+# Define reference point directly ahead of ego on its lane
+IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
+
+# Get the oncoming lane — assuming ego is on a two-way road and _laneToLeft is the opposing (oncoming) lane
+laneSec = network.laneSectionAt(ego)
+oncomingLane = laneSec._laneToLeft.lane
+
+# Project the reference point onto the oncoming lane's centerline to get a valid position
+projectPt = Vector(*oncomingLane.centerline.project(IntSpawnPt.position).coords[0])
+advHeading = oncomingLane.orientation[projectPt] + 180 deg  # Flip heading so agent travels *toward* ego (i.e., opposite direction of oncomingLane's default orientation)
+
+# Apply small lateral offset to place agent front-left relative to ego’s turning path (e.g., left of exact opposite point)
+# Since we're in the oncoming lane, "front-left" w.r.t. ego's turning path implies slight leftward shift *in world coordinates*
+# We offset perpendicular to oncomingLane's heading (i.e., to the left of its forward direction)
+offsetDir = orientedVector(90 deg, 1) rotated by advHeading
+shiftedPt = projectPt + (globalParameters.OPT_GEO_X_OFFSET @ 0) * offsetDir
+
+# Spawn the adversarial agent
+AdvAgent = Car at shiftedPt,
+    with heading advHeading,
+    with regionContainedIn None,
+    with behavior AdvBehavior()

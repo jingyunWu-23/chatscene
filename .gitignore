@@ -1,0 +1,17 @@
+# Ignore all Jupyter notebooks
+*.ipynb
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+__pycache__/
+*.pyc
+log/
+logs/
+results/
+*.pt
+*.pth
+*.torch
+*.ckpt
+*.egg
+*.tar.gz
