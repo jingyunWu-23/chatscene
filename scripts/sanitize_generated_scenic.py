@@ -52,6 +52,7 @@ def sanitize_text(text: str) -> str:
 
 
 def sanitize_file(path: Path) -> bool:
+    path = Path(path)
     text = path.read_text(encoding="utf-8")
     sanitized = sanitize_text(text)
     if sanitized == text:
