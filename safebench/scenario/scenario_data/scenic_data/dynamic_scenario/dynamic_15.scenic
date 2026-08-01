@@ -21,7 +21,7 @@ behavior AdvBehavior():
     
     # Walk directly toward target point in oncoming lane (jaywalking across traffic)
     while True:
-        take SetWalkingDirectionAction(direction from self to targetPoint)
+        take SetWalkingDirectionAction(angle from self.position to targetPoint)
         take SetWalkingSpeedAction(globalParameters.OPT_ADV_SPEED)
 
 param OPT_ADV_SPEED = Range(0, 5)

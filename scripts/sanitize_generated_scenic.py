@@ -58,6 +58,9 @@ UNPARENTHESIZED_OFFSET_VECTOR_RE = re.compile(
 OFFSET_ASSIGN_RE = re.compile(
     r"^\s*(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*.*\boffset along\b"
 )
+WALKING_DIRECTION_FROM_RE = re.compile(
+    r"SetWalkingDirectionAction\(direction from (?P<source>[^)]+?) to (?P<target>[^)]+?)\)"
+)
 UNIFORM_LIST_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
@@ -235,6 +238,22 @@ def sanitize_text(text: str) -> str:
             for name in missing_params:
                 output.append(f"param {name} = {default_param_value(name)}")
             inserted_missing_params = True
+            changed = True
+            i += 1
+            continue
+
+        walking_direction_match = WALKING_DIRECTION_FROM_RE.search(line)
+        if walking_direction_match:
+            source = walking_direction_match.group("source").strip()
+            target = walking_direction_match.group("target").strip()
+            if source == "self":
+                source = "self.position"
+            output.append(
+                WALKING_DIRECTION_FROM_RE.sub(
+                    f"SetWalkingDirectionAction(angle from {source} to {target})",
+                    line,
+                )
+            )
             changed = True
             i += 1
             continue
