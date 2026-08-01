@@ -137,7 +137,12 @@ class PPO(BasePolicy):
 
         # start to train, use gradient descent without batch size
         for K in range(self.train_iteration):
-            batch = replay_buffer.sample(self.batch_size)
+            try:
+                batch = replay_buffer.sample(self.batch_size)
+            except ValueError as e:
+                if 'Replay buffer does not contain enough transitions' in str(e):
+                    return
+                raise
             bn_s = CUDA(torch.FloatTensor(batch['state']))
             bn_a = CUDA(torch.FloatTensor(batch['action']))
             bn_r = CUDA(torch.FloatTensor(batch['reward'])).unsqueeze(-1) # [B, 1]
