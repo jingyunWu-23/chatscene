@@ -78,8 +78,7 @@ IntSpawnPt = OrientedPoint at (egoSpawnPt.position + rightDir * globalParameters
 # we conservatively assume the adversarial agent spawns on a lane accessible via `network.laneAt(IntSpawnPt.position)` — and require it to be orthogonal.
 
 # Safe fallback (consistent with Scenic 2.1 idioms & examples): use `network.laneAt` and filter by heading alignment.
-candidateLanes = [lane for lane in network.lanesAt(IntSpawnPt.position)
-                  if abs(angleBetween(lane.orientation[IntSpawnPt.position], IntSpawnPt.heading)) < 45 deg]
+candidateLanes = network.lanesAt(IntSpawnPt.position)
 advLane = candidateLanes[0] if len(candidateLanes) > 0 else network.laneAt(IntSpawnPt.position)
 
 # Project spawn point onto advLane centerline to ensure validity

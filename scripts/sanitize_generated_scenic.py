@@ -256,6 +256,26 @@ def strip_random_len_fallbacks(lines):
     return output, changed
 
 
+def strip_generated_angle_between_filters(lines):
+    output = []
+    changed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if (
+            " = [lane for lane in network.lanesAt(" in line
+            and i + 1 < len(lines)
+            and "angleBetween(" in lines[i + 1]
+        ):
+            output.append(line.split(" = ", 1)[0] + " = network.lanesAt(IntSpawnPt.position)")
+            changed = True
+            i += 2
+            continue
+        output.append(line)
+        i += 1
+    return output, changed
+
+
 def fallback_lane_value(has_ego_lane_sec, var_name=None):
     if has_ego_lane_sec and var_name != "egoLaneSec":
         return "egoLaneSec"
@@ -289,6 +309,8 @@ def sanitize_text(text: str) -> str:
     original_text = text
     lines = text.splitlines()
     lines, pre_changed = strip_random_len_fallbacks(lines)
+    lines, angle_filter_changed = strip_generated_angle_between_filters(lines)
+    pre_changed = pre_changed or angle_filter_changed
     if pre_changed:
         text = "\n".join(lines)
         if original_text.endswith("\n"):
