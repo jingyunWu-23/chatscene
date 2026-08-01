@@ -91,10 +91,10 @@ def ensure_dynamic_param_json(scenic_dir: Path, files, sample_num: int, opt_step
     changed = bool(force) or not json_path.exists()
     for scenic_file in files:
         key = f"OPT_{scenic_file.stem}"
-        if key in existing and not force:
-            continue
         ranges = parse_opt_ranges(scenic_file)
-        entry = {f"opt_time_{idx}": ranges for idx in range(block_count)}
+        entry = existing.get(key, {}) if not force else {}
+        for idx in range(block_count):
+            entry.setdefault(f"opt_time_{idx}", ranges)
         entry["select_id"] = list(range(min(int(select_num), int(sample_num))))
         existing[key] = entry
         changed = True
