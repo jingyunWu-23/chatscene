@@ -156,6 +156,8 @@ class ScenicRunner:
         
     def _init_renderer(self):
         self.logger.log(">> Initializing pygame birdeye renderer")
+        if not self.render:
+            os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
         pygame.init()
         flag = pygame.HWSURFACE | pygame.DOUBLEBUF
         if not self.render:

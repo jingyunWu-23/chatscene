@@ -114,6 +114,8 @@ def relative_to_root(path: Path) -> str:
 
 def main():
     args = parse_args()
+    if not args.render:
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     add_carla_egg(args.carla_python_egg)
 
     from safebench.util.run_util import load_config
