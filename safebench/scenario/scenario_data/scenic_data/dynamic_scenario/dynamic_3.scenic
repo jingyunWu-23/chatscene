@@ -22,12 +22,20 @@ param OPT_STOP_DISTANCE = Range(0, 1)
 straightLaneSections = []
 for lane in network.lanes:
     for laneSec in lane.sections:
+        if laneSec is None:
+            laneSec = egoLaneSec
+            if laneSec is None:
+                laneSec = egoLaneSec
+            require laneSec is not None
         if laneSec.centerline.isStraight:
             straightLaneSections.append(laneSec)
 
 if len(straightLaneSections) == 0:
     straightLaneSections = network.laneSections
 egoLaneSec = Uniform(*straightLaneSections)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup

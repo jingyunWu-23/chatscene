@@ -45,6 +45,10 @@ ORIENTATION_ACCESS_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"(?P<obj>[A-Za-z_][A-Za-z0-9_]*)\.orientation\["
 )
+CENTERLINE_CHAIN_RE = re.compile(
+    r"(?P<expr>(?P<base>[A-Za-z_][A-Za-z0-9_]*)\.(?P<field>startLane|endLane|connectingLane))\.centerline"
+)
+CENTERLINE_SIMPLE_RE = re.compile(r"\b(?P<obj>[A-Za-z_][A-Za-z0-9_]*)\.centerline")
 UNIFORM_LIST_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
@@ -166,17 +170,33 @@ def filter_behavior_kwarg_lines(arg_lines, allowed_params):
     return kept, changed
 
 
+def fallback_lane_value(has_ego_lane_sec, var_name=None):
+    if has_ego_lane_sec and var_name != "egoLaneSec":
+        return "egoLaneSec"
+    return "Uniform(*network.laneSections)"
+
+
+def temp_name_for_lane_expr(expr: str) -> str:
+    return "".join(part[:1].upper() + part[1:] for part in expr.split("."))
+
+
+def append_none_guard(output, indent, var_name, has_ego_lane_sec):
+    output.append(f"{indent}if {var_name} is None:")
+    output.append(f"{indent}    {var_name} = {fallback_lane_value(has_ego_lane_sec, var_name)}")
+    output.append(f"{indent}require {var_name} is not None")
+
+
 def append_lane_section_assignment(output, indent, section_var, base, side, tail, has_ego_lane_sec):
     output.append(f"{indent}{section_var} = {base}{side}{tail}")
     if side in ("._laneToLeft", "._laneToRight"):
         output.append(f"{indent}if {section_var} is None:")
         output.append(f"{indent}    {section_var} = {base}{opposite_side(side)}")
-    output.append(f"{indent}if {section_var} is None:")
     if has_ego_lane_sec and base == "network.laneSectionAt(ego)":
+        output.append(f"{indent}if {section_var} is None:")
         output.append(f"{indent}    {section_var} = egoLaneSec")
+        output.append(f"{indent}require {section_var} is not None")
     else:
-        output.append(f"{indent}    {section_var} = {base}")
-    output.append(f"{indent}require {section_var} is not None")
+        append_none_guard(output, indent, section_var, has_ego_lane_sec)
 
 
 def sanitize_text(text: str) -> str:
@@ -332,6 +352,11 @@ def sanitize_text(text: str) -> str:
         if section_alias_match and has_ego_lane_sec:
             indent = section_alias_match.group("indent")
             target = section_alias_match.group("target")
+            section = section_alias_match.group("section")
+            if target == section:
+                output.append(line)
+                i += 1
+                continue
             output.append(line)
             output.append(f"{indent}if {target} is None:")
             output.append(f"{indent}    {target} = egoLaneSec")
@@ -349,6 +374,21 @@ def sanitize_text(text: str) -> str:
                     i += 1
                     continue
                 break
+            continue
+
+        chain_matches = list(CENTERLINE_CHAIN_RE.finditer(line))
+        if chain_matches:
+            indent = re.match(r"^\s*", line).group(0)
+            rewritten = line
+            for match in chain_matches:
+                expr = match.group("expr")
+                temp_var = temp_name_for_lane_expr(expr)
+                rewritten = rewritten.replace(f"{expr}.centerline", f"{temp_var}.centerline")
+                output.append(f"{indent}{temp_var} = {expr}")
+                append_none_guard(output, indent, temp_var, has_ego_lane_sec)
+            output.append(rewritten)
+            changed = True
+            i += 1
             continue
 
         orientation_match = ORIENTATION_ACCESS_RE.match(line)
@@ -374,6 +414,29 @@ def sanitize_text(text: str) -> str:
                 output.append(f"{indent}if {obj} is None:")
                 output.append(f"{indent}    {obj} = egoLaneSec")
                 output.append(f"{indent}require {obj} is not None")
+                changed = True
+            output.append(line)
+            i += 1
+            continue
+
+        simple_centerline_match = CENTERLINE_SIMPLE_RE.search(line)
+        if simple_centerline_match:
+            indent = re.match(r"^\s*", line).group(0)
+            obj = simple_centerline_match.group("obj")
+            expected_fallback = fallback_lane_value(has_ego_lane_sec, obj)
+            already_guarded = (
+                len(output) >= 3
+                and output[-3].strip() == f"if {obj} is None:"
+                and output[-1].strip() == f"require {obj} is not None"
+            )
+            if already_guarded:
+                expected_assignment = f"{obj} = {expected_fallback}"
+                if output[-2].strip() != expected_assignment:
+                    guard_indent = output[-2][: len(output[-2]) - len(output[-2].lstrip())]
+                    output[-2] = f"{guard_indent}{expected_assignment}"
+                    changed = True
+            else:
+                append_none_guard(output, indent, obj, has_ego_lane_sec)
                 changed = True
             output.append(line)
             i += 1

@@ -31,6 +31,9 @@ for lane in network.lanes:
 if len(laneSecsWithTwoAdjacent) == 0:
     laneSecsWithTwoAdjacent = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithTwoAdjacent)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup
@@ -50,6 +53,11 @@ if advLane is None:
     advLane = egoLaneSec
 require advLane is not None
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for 0
+if advLane is None:
+    advLane = egoLaneSec
+    if advLane is None:
+        advLane = egoLaneSec
+    require advLane is not None
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 if advLane is None:
     advLane = egoLaneSec

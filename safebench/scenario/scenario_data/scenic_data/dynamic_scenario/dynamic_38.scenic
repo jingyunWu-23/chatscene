@@ -22,6 +22,9 @@ intersection = Uniform(*filter(lambda i: i.is4Way, network.intersections))
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.STRAIGHT or m.type is ManeuverType.RIGHT_TURN, intersection.maneuvers))
 egoInitLane = egoManeuver.startLane
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+if egoInitLane is None:
+    egoInitLane = Uniform(*network.laneSections)
+require egoInitLane is not None
 egoSpawnPt = OrientedPoint in egoInitLane.centerline
 
 ego = Car at egoSpawnPt,
@@ -45,7 +48,13 @@ advLane = advLaneSec
 
 # Get a point near the intersection centerline: project a point just before the lane's end (approaching intersection)
 # Use the start of the opposite lane's centerline segment that aligns with ego's approach
+if advLane is None:
+    advLane = Uniform(*network.laneSections)
+require advLane is not None
 # Prefer using `advLane.centerline.end` (i.e., the end closest to ego’s path), then offset backward slightly
+if advLane is None:
+    advLane = Uniform(*network.laneSections)
+require advLane is not None
 IntSpawnPt = advLane.centerline.end
 # Offset backward along the opposite lane's heading (i.e., toward the intersection centerline, but *just before* it)
 param OPT_OPPOSITE_OFFSET = Range(-5, -1)  # meters back from end, placing agent just before centerline

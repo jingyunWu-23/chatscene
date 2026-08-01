@@ -35,7 +35,11 @@ intersection = Uniform(*filter(lambda i: i.is4Way and i.isSignalized, network.in
 egoInitLane = Uniform(*intersection.incomingLanes)
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.STRAIGHT, egoInitLane.maneuvers))
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
-egoSpawnPt = OrientedPoint in egoManeuver.startLane.centerline
+EgoManeuverStartLane = egoManeuver.startLane
+if EgoManeuverStartLane is None:
+    EgoManeuverStartLane = Uniform(*network.laneSections)
+require EgoManeuverStartLane is not None
+egoSpawnPt = OrientedPoint in EgoManeuverStartLane.centerline
 
 # Setting up the ego vehicle at the initial position
 ego = Car at egoSpawnPt,

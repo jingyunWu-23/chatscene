@@ -37,6 +37,9 @@ for lane in network.lanes:
 if len(laneSecsWithAdjacentForward) == 0:
     laneSecsWithAdjacentForward = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithAdjacentForward)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup
@@ -64,7 +67,7 @@ advLaneSec = laneSec._laneToRight
 if advLaneSec is None:
     advLaneSec = laneSec._laneToLeft
 if advLaneSec is None:
-    advLaneSec = laneSec
+    advLaneSec = egoLaneSec
 require advLaneSec is not None
 advLane = advLaneSec
 if advLane is None:
@@ -74,6 +77,11 @@ require advLane is not None
 # Spawn point aligned longitudinally with ego, then shifted laterally into target lane
 BaseSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_LONGITUDINAL_DISTANCE
 # Project onto target lane centerline to ensure valid position in that lane
+if advLane is None:
+    advLane = egoLaneSec
+    if advLane is None:
+        advLane = egoLaneSec
+    require advLane is not None
 projected = advLane.centerline.project(BaseSpawnPt.position)
 projectPt = Vector(*projected.coords[0])
 if advLane is None:
@@ -90,6 +98,11 @@ lateralShift = globalParameters.OPT_LATERAL_OFFSET @ 0
 AdvSpawnPt = BaseSpawnPt offset along (advHeading + 90 deg) by globalParameters.OPT_LATERAL_OFFSET
 
 # Ensure final position lies on advLane (optional projection again for robustness)
+if advLane is None:
+    advLane = egoLaneSec
+    if advLane is None:
+        advLane = egoLaneSec
+    require advLane is not None
 finalProjected = advLane.centerline.project(AdvSpawnPt.position)
 finalPt = Vector(*finalProjected.coords[0])
 if advLane is None:

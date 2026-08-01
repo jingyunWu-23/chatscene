@@ -29,6 +29,9 @@ for lane in network.lanes:
 if len(laneSecsWithLeftLane) == 0:
     laneSecsWithLeftLane = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithLeftLane)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup
@@ -37,6 +40,9 @@ ego = Car at egoSpawnPt,
     with blueprint EGO_MODEL
 
 # Parked car obstructing ego's lane
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 parkedCar = Car on egoLaneSec.centerline,
     with position egoSpawnPt.position,
     with heading egoSpawnPt.heading,

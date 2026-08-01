@@ -17,6 +17,9 @@ intersection = Uniform(*filter(lambda i: i.is4Way, network.intersections))
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.RIGHT_TURN, intersection.maneuvers))
 egoInitLane = egoManeuver.startLane
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+if egoInitLane is None:
+    egoInitLane = Uniform(*network.laneSections)
+require egoInitLane is not None
 egoSpawnPt = OrientedPoint in egoInitLane.centerline
 
 ego = Car at egoSpawnPt,
@@ -25,7 +28,11 @@ ego = Car at egoSpawnPt,
 param OPT_GEO_X_DISTANCE = Range(-8, -2)  # Offset leftward from centerline (sidewalk/crosswalk side)
 param OPT_GEO_Y_DISTANCE = Range(-5, 15)   # Forward along centerline, covering zebra crossing / intersection approach
 
-IntSpawnPt = egoManeuver.endLane.centerline.start  # Start of end lane — typically aligns with intersection entry / crosswalk
+EgoManeuverEndLane = egoManeuver.endLane
+if EgoManeuverEndLane is None:
+    EgoManeuverEndLane = Uniform(*network.laneSections)
+require EgoManeuverEndLane is not None
+IntSpawnPt = EgoManeuverEndLane.centerline.start  # Start of end lane — typically aligns with intersection entry / crosswalk
 SHIFT = globalParameters.OPT_GEO_X_DISTANCE @ globalParameters.OPT_GEO_Y_DISTANCE
 AdvAgent = Pedestrian at IntSpawnPt offset along IntSpawnPt.heading by SHIFT,
     with heading IntSpawnPt.heading - 90 deg,  # Facing across lane (i.e., crossing from left)

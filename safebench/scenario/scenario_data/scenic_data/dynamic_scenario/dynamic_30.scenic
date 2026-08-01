@@ -20,6 +20,9 @@ intersection = Uniform(*filter(lambda i: i.is4Way and i.isSignalized, network.in
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.RIGHT_TURN, intersection.maneuvers))
 egoInitLane = egoManeuver.startLane
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+if egoInitLane is None:
+    egoInitLane = Uniform(*network.laneSections)
+require egoInitLane is not None
 egoSpawnPt = OrientedPoint in egoInitLane.centerline
 
 ego = Car at egoSpawnPt,
@@ -37,7 +40,7 @@ leftLaneSec = laneSec._laneToLeft
 if leftLaneSec is None:
     leftLaneSec = laneSec._laneToRight
 if leftLaneSec is None:
-    leftLaneSec = laneSec
+    leftLaneSec = Uniform(*network.laneSections)
 require leftLaneSec is not None
 leftLane = leftLaneSec
 
@@ -50,6 +53,9 @@ PerpOffset = globalParameters.OPT_GEO_X_DISTANCE @ 0
 LateralSpawnPt = egoSpawnPt offset left by PerpOffset
 
 # Project onto left lane to ensure valid position
+if leftLane is None:
+    leftLane = Uniform(*network.laneSections)
+require leftLane is not None
 projected = leftLane.centerline.project(LateralSpawnPt.position)
 projectPt = Vector(*projected.coords[0])
 advHeading = leftLane.orientation[projectPt]

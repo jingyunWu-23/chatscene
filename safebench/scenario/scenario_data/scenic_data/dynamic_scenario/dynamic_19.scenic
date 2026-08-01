@@ -27,6 +27,9 @@ for lane in network.lanes:
 if len(laneSecsWithLeftLane) == 0:
     laneSecsWithLeftLane = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithLeftLane)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup
@@ -54,7 +57,7 @@ advLaneSec = laneSec._laneToLeft
 if advLaneSec is None:
     advLaneSec = laneSec._laneToRight
 if advLaneSec is None:
-    advLaneSec = laneSec
+    advLaneSec = egoLaneSec
 require advLaneSec is not None
 advLane = advLaneSec
 if advLane is None:

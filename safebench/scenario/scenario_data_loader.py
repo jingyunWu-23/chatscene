@@ -151,8 +151,16 @@ class ScenicDataLoader:
                     self.scenic.endSimulation()
             except AttributeError as e:
                 message = str(e)
-                if "'NoneType' object has no attribute" in message and (
-                    "'orientation'" in message or "'lane'" in message
+                generated_scene_attr_errors = (
+                    "'orientation'",
+                    "'lane'",
+                    "'centerline'",
+                    "'startLane'",
+                    "'endLane'",
+                    "'connectingLane'",
+                )
+                if "object has no attribute" in message and any(
+                    attr in message for attr in generated_scene_attr_errors
                 ):
                     try:
                         self.scenic.endSimulation()

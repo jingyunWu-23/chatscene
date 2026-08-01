@@ -16,6 +16,9 @@ param OPT_ADV_DISTANCE = Range(0, 20)
 param OPT_STOP_DISTANCE = Range(0, 1)
 # Selecting a random lane section from the network for a straight road
 egoLaneSec = Uniform(*network.laneSections)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup

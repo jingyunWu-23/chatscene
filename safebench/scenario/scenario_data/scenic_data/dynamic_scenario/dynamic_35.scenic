@@ -32,6 +32,9 @@ monitor TrafficLights:
 
 intersection = Uniform(*filter(lambda i: i.is4Way and i.isSignalized, network.intersections))
 egoInitLane = Uniform(*intersection.incomingLanes)
+if egoInitLane is None:
+    egoInitLane = Uniform(*network.laneSections)
+require egoInitLane is not None
 egoSpawnPt = OrientedPoint in egoInitLane.centerline
 
 # Setting up the ego vehicle at the initial position, approaching the intersection
@@ -59,6 +62,9 @@ leftLegRoad = egoRoad.left
 require leftLegRoad != None
 
 # Sample a point near the end of the left-leg road (i.e., where it enters the intersection)
+if leftLegRoad is None:
+    leftLegRoad = Uniform(*network.laneSections)
+require leftLegRoad is not None
 IntSpawnPt = leftLegRoad.centerline.end
 
 # Offset slightly backward (along leftLegRoad's heading) to place agent *approaching* (not already in intersection)
@@ -67,6 +73,9 @@ SHIFT_BACK = globalParameters.OPT_GEO_X_DISTANCE @ 0
 BackOffsetPt = IntSpawnPt offset along IntSpawnPt.heading by SHIFT_BACK
 
 # Project onto leftLegRoad's centerline to ensure validity
+if leftLegRoad is None:
+    leftLegRoad = Uniform(*network.laneSections)
+require leftLegRoad is not None
 projected = Vector(*leftLegRoad.centerline.project(BackOffsetPt.position).coords[0])
 advHeading = leftLegRoad.orientation[projected]
 

@@ -33,6 +33,9 @@ for lane in network.lanes:
 if len(laneSecsWithLeftLane) == 0:
     laneSecsWithLeftLane = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithLeftLane)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup
@@ -60,7 +63,7 @@ oncomingLaneSec = laneSec._laneToLeft
 if oncomingLaneSec is None:
     oncomingLaneSec = laneSec._laneToRight
 if oncomingLaneSec is None:
-    oncomingLaneSec = laneSec
+    oncomingLaneSec = egoLaneSec
 require oncomingLaneSec is not None
 oncomingLane = oncomingLaneSec
 if oncomingLane is None:
@@ -68,6 +71,11 @@ if oncomingLane is None:
 require oncomingLane is not None
 # Spawn point in oncoming lane, ahead of blocker (so motorcyclist approaches blocker then swerves)
 oncomingSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
+if oncomingLane is None:
+    oncomingLane = egoLaneSec
+    if oncomingLane is None:
+        oncomingLane = egoLaneSec
+    require oncomingLane is not None
 projectedOncomingPos = Vector(*oncomingLane.centerline.project(oncomingSpawnPt.position).coords[0])
 if oncomingLane is None:
     oncomingLane = egoLaneSec

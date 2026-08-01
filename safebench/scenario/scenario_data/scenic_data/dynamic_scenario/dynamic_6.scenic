@@ -17,6 +17,9 @@ intersection = Uniform(*filter(lambda i: i.is4Way, network.intersections))
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.LEFT_TURN, intersection.maneuvers))
 egoInitLane = egoManeuver.startLane
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+if egoInitLane is None:
+    egoInitLane = Uniform(*network.laneSections)
+require egoInitLane is not None
 egoSpawnPt = OrientedPoint in egoInitLane.centerline
 
 ego = Car at egoSpawnPt,
@@ -26,7 +29,11 @@ param OPT_GEO_X_DISTANCE = Range(2, 8)   # distance forward along ego's heading 
 param OPT_GEO_Y_DISTANCE = Range(-3, 3)  # lateral offset to align with crosswalk entry point
 
 -- Get the ego's start lane and its orientation at the end (approaching intersection)
-IntSpawnPt = egoManeuver.startLane.centerline.end
+EgoManeuverStartLane = egoManeuver.startLane
+if EgoManeuverStartLane is None:
+    EgoManeuverStartLane = Uniform(*network.laneSections)
+require EgoManeuverStartLane is not None
+IntSpawnPt = EgoManeuverStartLane.centerline.end
 
 -- Offset into the intersection: forward along ego's heading (to reach crosswalk entry),
 -- then laterally to position on the right side of the ego's path (i.e., right front relative to ego)

@@ -17,6 +17,9 @@ intersection = Uniform(*filter(lambda i: i.is4Way, network.intersections))
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.RIGHT_TURN, intersection.maneuvers))
 egoInitLane = egoManeuver.startLane
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+if egoInitLane is None:
+    egoInitLane = Uniform(*network.laneSections)
+require egoInitLane is not None
 egoSpawnPt = OrientedPoint in egoInitLane.centerline
 
 ego = Car at egoSpawnPt,
@@ -30,7 +33,7 @@ advLaneSec = network.laneSectionAt(ego)._laneToRight
 if advLaneSec is None:
     advLaneSec = network.laneSectionAt(ego)._laneToLeft
 if advLaneSec is None:
-    advLaneSec = network.laneSectionAt(ego)
+    advLaneSec = Uniform(*network.laneSections)
 require advLaneSec is not None
 advLane = advLaneSec
 
@@ -40,6 +43,9 @@ param OPT_GEO_X_DISTANCE = Range(5, 20)   # forward distance along ego's heading
 param OPT_GEO_Y_DISTANCE = Range(1, 5)     # rightward lateral offset (positive to right)
 
 IntSpawnPt = egoSpawnPt offset along egoSpawnPt.heading by globalParameters.OPT_GEO_X_DISTANCE
+if advLane is None:
+    advLane = Uniform(*network.laneSections)
+require advLane is not None
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]
 

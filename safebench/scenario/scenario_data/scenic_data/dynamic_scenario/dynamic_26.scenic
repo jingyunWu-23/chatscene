@@ -31,7 +31,11 @@ intersection = Uniform(*filter(lambda i: i.is4Way and i.isSignalized, network.in
 egoInitLane = Uniform(*intersection.incomingLanes)
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.LEFT_TURN, egoInitLane.maneuvers))
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
-egoSpawnPt = OrientedPoint in egoManeuver.startLane.centerline
+EgoManeuverStartLane = egoManeuver.startLane
+if EgoManeuverStartLane is None:
+    EgoManeuverStartLane = Uniform(*network.laneSections)
+require EgoManeuverStartLane is not None
+egoSpawnPt = OrientedPoint in EgoManeuverStartLane.centerline
 
 # Setting up the ego vehicle at the initial position
 ego = Car at egoSpawnPt,
@@ -48,12 +52,15 @@ advLaneSec = laneSec._laneToLeft
 if advLaneSec is None:
     advLaneSec = laneSec._laneToRight
 if advLaneSec is None:
-    advLaneSec = laneSec
+    advLaneSec = Uniform(*network.laneSections)
 require advLaneSec is not None
 advLane = advLaneSec
 
 # Compute spawn point ahead along ego's road direction, then project onto oncoming lane centerline
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
+if advLane is None:
+    advLane = Uniform(*network.laneSections)
+require advLane is not None
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt] + 180 deg  # Opposite direction: oncoming traffic
 

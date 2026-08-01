@@ -26,6 +26,9 @@ for lane in network.lanes:
 if len(straightLaneSecs) == 0:
     straightLaneSecs = network.laneSections
 egoLaneSec = Uniform(*straightLaneSecs)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup

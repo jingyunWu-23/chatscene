@@ -30,6 +30,9 @@ for lane in network.lanes:
 if len(laneSecsWithSameDirAdjacentLane) == 0:
     laneSecsWithSameDirAdjacentLane = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithSameDirAdjacentLane)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup
@@ -49,7 +52,7 @@ rightLaneSec = laneSec._laneToRight
 if rightLaneSec is None:
     rightLaneSec = laneSec._laneToLeft
 if rightLaneSec is None:
-    rightLaneSec = laneSec
+    rightLaneSec = egoLaneSec
 require rightLaneSec is not None
 rightLane = rightLaneSec
 if rightLane is None:
@@ -61,7 +64,7 @@ while rightLane and rightLane._laneToRight:
     if rightLaneSec is None:
         rightLaneSec = rightLane._laneToLeft
     if rightLaneSec is None:
-        rightLaneSec = rightLane
+        rightLaneSec = egoLaneSec
     require rightLaneSec is not None
     rightLane = rightLaneSec
     if rightLane is None:

@@ -33,7 +33,11 @@ intersection = Uniform(*filter(lambda i: i.is4Way and i.isSignalized, network.in
 egoInitLane = Uniform(*intersection.incomingLanes)
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.LEFT_TURN, egoInitLane.maneuvers))
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
-egoSpawnPt = OrientedPoint in egoManeuver.startLane.centerline
+EgoManeuverStartLane = egoManeuver.startLane
+if EgoManeuverStartLane is None:
+    EgoManeuverStartLane = Uniform(*network.laneSections)
+require EgoManeuverStartLane is not None
+egoSpawnPt = OrientedPoint in EgoManeuverStartLane.centerline
 
 # Setting up the ego vehicle at the initial position
 ego = Car at egoSpawnPt,
@@ -79,6 +83,9 @@ candidateLanes = [lane for lane in network.lanesAt(IntSpawnPt.position)
 advLane = candidateLanes[0] if len(candidateLanes) > 0 else network.laneAt(IntSpawnPt.position)
 
 # Project spawn point onto advLane centerline to ensure validity
+if advLane is None:
+    advLane = Uniform(*network.laneSections)
+require advLane is not None
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]
 
@@ -92,7 +99,7 @@ while cur._laneToRight is not None:
     if curSec is None:
         curSec = cur._laneToLeft
     if curSec is None:
-        curSec = cur
+        curSec = Uniform(*network.laneSections)
     require curSec is not None
     cur = curSec
     rightmostLanes.append(cur)

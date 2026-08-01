@@ -8,6 +8,11 @@ EGO_MODEL = "vehicle.lincoln.mkz_2017"
 behavior AdvBehavior():
     # Determine oncoming lane: opposite direction to ego's heading, offset laterally
     oncomingLane = ego.lane.offsetLateral(ego.lane.width)  # Approximate opposite-direction lane
+    if oncomingLane is None:
+        oncomingLane = egoLaneSec
+        if oncomingLane is None:
+            oncomingLane = egoLaneSec
+        require oncomingLane is not None
     targetPoint = oncomingLane.centerline.pointAtDistance(globalParameters.OPT_ADV_DISTANCE)
     
     # Wait until ego is within triggering distance
@@ -33,6 +38,9 @@ for lane in network.lanes:
 if len(laneSecsWithLeftLane) == 0:
     laneSecsWithLeftLane = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithLeftLane)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup

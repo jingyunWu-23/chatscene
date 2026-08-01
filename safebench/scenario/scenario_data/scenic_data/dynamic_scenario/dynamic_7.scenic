@@ -17,7 +17,11 @@ intersection = Uniform(*filter(lambda i: i.is4Way, network.intersections))
 param OPT_GEO_X_DISTANCE = Range(2, 8)
 param OPT_GEO_Y_DISTANCE = Range(-5, 5)
 
-IntSpawnPt = egoManeuver.startLane.centerline.end
+EgoManeuverStartLane = egoManeuver.startLane
+if EgoManeuverStartLane is None:
+    EgoManeuverStartLane = Uniform(*network.laneSections)
+require EgoManeuverStartLane is not None
+IntSpawnPt = EgoManeuverStartLane.centerline.end
 SHIFT = globalParameters.OPT_GEO_X_DISTANCE @ globalParameters.OPT_GEO_Y_DISTANCE
 AdvAgent = Motorcycle at IntSpawnPt offset along IntSpawnPt.heading by SHIFT,
     with heading IntSpawnPt.heading + 90 deg,

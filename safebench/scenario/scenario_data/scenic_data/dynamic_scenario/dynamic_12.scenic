@@ -31,6 +31,9 @@ for lane in network.lanes:
 if len(laneSecsWithAdjacentParallelLane) == 0:
     laneSecsWithAdjacentParallelLane = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithAdjacentParallelLane)
+if egoLaneSec is None:
+    egoLaneSec = Uniform(*network.laneSections)
+require egoLaneSec is not None
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 
 # Ego vehicle setup
@@ -67,6 +70,11 @@ require advLane is not None
 
 # Spawn point for adversarial agent in target lane, ahead of ego (but not necessarily aligned with LeadingSpawnPt)
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
+if advLane is None:
+    advLane = egoLaneSec
+    if advLane is None:
+        advLane = egoLaneSec
+    require advLane is not None
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 if advLane is None:
     advLane = egoLaneSec

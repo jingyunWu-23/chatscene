@@ -21,6 +21,9 @@ intersection = Uniform(*filter(lambda i: i.is4Way, network.intersections))
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.RIGHT_TURN, intersection.maneuvers))
 egoInitLane = egoManeuver.startLane
 egoTrajectory = [egoInitLane, egoManeuver.connectingLane, egoManeuver.endLane]
+if egoInitLane is None:
+    egoInitLane = Uniform(*network.laneSections)
+require egoInitLane is not None
 egoSpawnPt = OrientedPoint in egoInitLane.centerline
 
 ego = Car at egoSpawnPt,
@@ -32,8 +35,16 @@ if len(advManeuvers) == 0:
     advManeuvers = network.laneSections
 advManeuver = Uniform(*advManeuvers)
 advTrajectory = [advManeuver.startLane, advManeuver.connectingLane, advManeuver.endLane]
-advSpawnPt = advManeuver.connectingLane.centerline[0]  # Initial point on the connecting lane's centerline
-IntSpawnPt = advManeuver.connectingLane.centerline.start  # Start of the connecting lane centerline
+AdvManeuverConnectingLane = advManeuver.connectingLane
+if AdvManeuverConnectingLane is None:
+    AdvManeuverConnectingLane = Uniform(*network.laneSections)
+require AdvManeuverConnectingLane is not None
+advSpawnPt = AdvManeuverConnectingLane.centerline[0]  # Initial point on the connecting lane's centerline
+AdvManeuverConnectingLane = advManeuver.connectingLane
+if AdvManeuverConnectingLane is None:
+    AdvManeuverConnectingLane = Uniform(*network.laneSections)
+require AdvManeuverConnectingLane is not None
+IntSpawnPt = AdvManeuverConnectingLane.centerline.start  # Start of the connecting lane centerline
 
 param OPT_GEO_Y_DISTANCE = Range(-10, 10)
 # Setting up the adversarial agent
