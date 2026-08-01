@@ -4,6 +4,7 @@ param map = localPath(f'../maps/{Town}.xodr')
 param carla_map = Town
 model scenic.simulators.carla.model
 EGO_MODEL = "vehicle.lincoln.mkz_2017"
+param OPT_LEADING_SPEED = Range(1, 8)
 
 param OPT_ADV_SPEED = Range(5, 10)
 param OPT_ADV_DISTANCE = Range(0, 20)

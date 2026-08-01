@@ -49,10 +49,42 @@ UNIFORM_LIST_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
 )
+PARAM_DEF_RE = re.compile(r"^\s*param\s+(OPT_[A-Za-z0-9_]+)\s*=")
+OPT_REF_RE = re.compile(r"globalParameters\.(OPT_[A-Za-z0-9_]+)")
 
 
 def opposite_side(side: str) -> str:
     return "._laneToLeft" if side == "._laneToRight" else "._laneToRight"
+
+
+def default_param_value(name: str) -> str:
+    if "SPEED" in name:
+        return "Range(1, 8)"
+    if "THROTTLE" in name:
+        return "Range(0.5, 1.0)"
+    if "BRAKE" in name or "STOP" in name:
+        return "Range(0, 1)"
+    if "STEER" in name or "SWERVE" in name:
+        return "Range(-1.0, 1.0)"
+    if "COUNT" in name or "STEPS" in name or "WAIT" in name or "DURATION" in name:
+        return "Range(1, 5)"
+    if "OFFSET" in name or "GEO_X" in name:
+        return "Range(-2, 2)"
+    if "DISTANCE" in name or "GEO_Y" in name:
+        return "Range(0, 30)"
+    return "Range(0, 1)"
+
+
+def missing_opt_params(lines):
+    refs = set()
+    defs = set()
+    for line in lines:
+        code = line.split("#", 1)[0]
+        match = PARAM_DEF_RE.match(code)
+        if match:
+            defs.add(match.group(1))
+        refs.update(OPT_REF_RE.findall(code))
+    return sorted(refs - defs)
 
 
 def append_lane_section_assignment(output, indent, section_var, base, side, tail, has_ego_lane_sec):
@@ -73,9 +105,20 @@ def sanitize_text(text: str) -> str:
     output = []
     changed = False
     has_ego_lane_sec = any(re.match(r"^\s*egoLaneSec\s*=", line) for line in lines)
+    missing_params = missing_opt_params(lines)
+    inserted_missing_params = False
     i = 0
     while i < len(lines):
         line = lines[i]
+        if missing_params and not inserted_missing_params and line.startswith("EGO_MODEL"):
+            output.append(line)
+            for name in missing_params:
+                output.append(f"param {name} = {default_param_value(name)}")
+            inserted_missing_params = True
+            changed = True
+            i += 1
+            continue
+
         uniform_list_match = UNIFORM_LIST_ASSIGN_RE.match(line)
         if uniform_list_match:
             indent = uniform_list_match.group("indent")
@@ -246,9 +289,12 @@ def sanitize_text(text: str) -> str:
         i += 1
 
     result = "\n".join(output)
+    if missing_params and not inserted_missing_params:
+        prefix = [f"param {name} = {default_param_value(name)}" for name in missing_params]
+        result = "\n".join(prefix + [result])
     if text.endswith("\n"):
         result += "\n"
-    return result if changed else text
+    return result if changed or (missing_params and not inserted_missing_params) else text
 
 
 def sanitize_file(path: Path) -> bool:
