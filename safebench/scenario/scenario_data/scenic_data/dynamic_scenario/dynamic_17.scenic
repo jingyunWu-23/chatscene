@@ -50,6 +50,9 @@ param OPT_GEO_X_DISTANCE = Range(-4, 4)  # Small lateral offset to place in onco
 # To be consistent with Scenic 2.1 idioms and prior examples, we treat the adversarial agent as spawning in the *same lane ego currently occupies*, but heading opposite (i.e., oncoming).
 # Since ego’s current lane is not trivially available without ego being spawned, and per examples, we rely on network.laneSectionAt(ego) to get local lane structure.
 laneSec = network.laneSectionAt(ego)
+if laneSec is None:
+    laneSec = egoLaneSec
+require laneSec is not None
 # The lane ego is *in* is laneSec.lane; but for oncoming traffic, we want the *same geometric lane*, just opposite heading.
 # So we spawn ahead along roadDirection, then flip heading.
 

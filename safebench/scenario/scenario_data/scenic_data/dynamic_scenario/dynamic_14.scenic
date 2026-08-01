@@ -55,6 +55,9 @@ param OPT_MANEUVER_SPEED = Range(3, 8)          # Speed during lane-crossing man
 # and per instruction to match existing style, we choose _laneToRight as in first snippet.
 
 laneSec = network.laneSectionAt(ego)
+if laneSec is None:
+    laneSec = egoLaneSec
+require laneSec is not None
 advLaneSec = laneSec._laneToRight
 if advLaneSec is None:
     advLaneSec = laneSec._laneToLeft

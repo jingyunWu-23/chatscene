@@ -11,6 +11,9 @@ behavior AdvBehavior():
         network.laneAt(self) is not network.laneAt(ego) )
     # Identify ego's original lane section (i.e., the lane ego is currently in — which the adversarial car will merge into to block return)
     targetLaneSec = network.laneSectionAt(ego)
+    if targetLaneSec is None:
+        targetLaneSec = egoLaneSec
+    require targetLaneSec is not None
     # Execute the lane change into ego's current lane to block its return maneuver
     do LaneChangeBehavior(laneSectionToSwitch=targetLaneSec, target_speed=globalParameters.OPT_ADV_SPEED)
 
@@ -47,7 +50,7 @@ advLaneSec = network.laneSectionAt(ego)._laneToRight  # Default to right lane; a
 if advLaneSec is None:
     advLaneSec = network.laneSectionAt(ego)._laneToLeft
 if advLaneSec is None:
-    advLaneSec = network.laneSectionAt(ego)
+    advLaneSec = egoLaneSec
 require advLaneSec is not None
 advLane = advLaneSec
 

@@ -44,6 +44,9 @@ param OPT_GEO_Y_DISTANCE = Range(2, 6)
 
 # Setup for the blocking car that the ego must bypass
 laneSec = network.laneSectionAt(ego)
+if laneSec is None:
+    laneSec = egoLaneSec
+require laneSec is not None
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_BLOCKER_Y_DISTANCE
 Blocker = Car at IntSpawnPt,
     with heading IntSpawnPt.heading,

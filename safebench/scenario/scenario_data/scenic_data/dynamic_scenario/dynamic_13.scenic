@@ -36,7 +36,7 @@ advLaneSec = network.laneSectionAt(ego)._laneToRight
 if advLaneSec is None:
     advLaneSec = network.laneSectionAt(ego)._laneToLeft
 if advLaneSec is None:
-    advLaneSec = network.laneSectionAt(ego)
+    advLaneSec = egoLaneSec
 require advLaneSec is not None
 advLane = advLaneSec
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

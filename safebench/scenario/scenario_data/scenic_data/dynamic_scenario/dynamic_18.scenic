@@ -46,6 +46,9 @@ param OPT_GEO_Y_DISTANCE = Range(10, 30)
 
 # Setting up the parked car that blocks the ego's path
 laneSec = network.laneSectionAt(ego)  # Assuming network.laneSectionAt(ego) is predefined in the geometry part
+if laneSec is None:
+    laneSec = egoLaneSec
+require laneSec is not None
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_BLOCKER_Y_DISTANCE
 Blocker = Car at IntSpawnPt,
     with heading IntSpawnPt.heading,

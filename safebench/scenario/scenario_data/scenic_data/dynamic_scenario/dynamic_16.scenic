@@ -11,6 +11,9 @@ behavior AdvBehavior():
         do FollowLaneBehavior(target_speed=globalParameters.OPT_ADV_SPEED)
     interrupt when (distance from self to ego) < globalParameters.OPT_LANE_CHANGE_TRIGGER_DISTANCE and network.laneAt(self) is not network.laneAt(ego) and not laneChangeCompleted:
         LaneSec = network.laneSectionAt(ego)
+        if LaneSec is None:
+            LaneSec = egoLaneSec
+        require LaneSec is not None
         do LaneChangeBehavior(
             laneSectionToSwitch=LaneSec,
             target_speed=globalParameters.OPT_ADV_SPEED)
@@ -41,6 +44,9 @@ param OPT_GEO_Y_DISTANCE = Range(10, 30)
 
 # Setting up the parked car that blocks the ego's original lane and limits visibility
 laneSec = network.laneSectionAt(ego)  # Assuming network.laneSectionAt(ego) is predefined in the geometry part
+if laneSec is None:
+    laneSec = egoLaneSec
+require laneSec is not None
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_BLOCKER_Y_DISTANCE
 Blocker = Car at IntSpawnPt,
     with heading IntSpawnPt.heading,

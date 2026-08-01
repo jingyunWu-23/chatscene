@@ -33,19 +33,26 @@ REGION_SECTION_LANE_RE = re.compile(
     r"^(?P<indent>\s*)with regionContainedIn "
     r"(?P<section>[A-Za-z_][A-Za-z0-9_]*(?:Sec|Section))\.lane(?P<tail>\s*,?\s*(?:#.*)?)$"
 )
+LANE_SECTION_AT_EGO_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<section>[A-Za-z_][A-Za-z0-9_]*(?:Sec|Section))\s*=\s*"
+    r"network\.laneSectionAt\(ego\)(?P<tail>\s*(?:#.*)?)$"
+)
 
 
 def opposite_side(side: str) -> str:
     return "._laneToLeft" if side == "._laneToRight" else "._laneToRight"
 
 
-def append_lane_section_assignment(output, indent, section_var, base, side, tail):
+def append_lane_section_assignment(output, indent, section_var, base, side, tail, has_ego_lane_sec):
     output.append(f"{indent}{section_var} = {base}{side}{tail}")
     if side in ("._laneToLeft", "._laneToRight"):
         output.append(f"{indent}if {section_var} is None:")
         output.append(f"{indent}    {section_var} = {base}{opposite_side(side)}")
     output.append(f"{indent}if {section_var} is None:")
-    output.append(f"{indent}    {section_var} = {base}")
+    if has_ego_lane_sec and base == "network.laneSectionAt(ego)":
+        output.append(f"{indent}    {section_var} = egoLaneSec")
+    else:
+        output.append(f"{indent}    {section_var} = {base}")
     output.append(f"{indent}require {section_var} is not None")
 
 
@@ -53,9 +60,33 @@ def sanitize_text(text: str) -> str:
     lines = text.splitlines()
     output = []
     changed = False
+    has_ego_lane_sec = any(re.match(r"^\s*egoLaneSec\s*=", line) for line in lines)
     i = 0
     while i < len(lines):
         line = lines[i]
+        lane_section_at_ego = LANE_SECTION_AT_EGO_RE.match(line)
+        if lane_section_at_ego and has_ego_lane_sec:
+            indent = lane_section_at_ego.group("indent")
+            section_var = lane_section_at_ego.group("section")
+            output.append(line)
+            output.append(f"{indent}if {section_var} is None:")
+            output.append(f"{indent}    {section_var} = egoLaneSec")
+            output.append(f"{indent}require {section_var} is not None")
+            changed = True
+            i += 1
+            while i < len(lines):
+                stripped = lines[i].strip()
+                if stripped == f"if {section_var} is None:":
+                    i += 1
+                    while i < len(lines) and lines[i].startswith(f"{indent}    "):
+                        i += 1
+                    continue
+                if stripped == f"require {section_var} is not None":
+                    i += 1
+                    continue
+                break
+            continue
+
         region_match = REGION_SECTION_LANE_RE.match(line)
         if region_match:
             output.append(
@@ -73,7 +104,7 @@ def sanitize_text(text: str) -> str:
             base = split_match.group("base").strip()
             side = split_match.group("side")
             tail = split_match.group("tail")
-            append_lane_section_assignment(output, indent, section_var, base, side, tail)
+            append_lane_section_assignment(output, indent, section_var, base, side, tail, has_ego_lane_sec)
             changed = True
             i += 1
             while i < len(lines):
@@ -119,7 +150,7 @@ def sanitize_text(text: str) -> str:
         tail = match.group("tail")
         section_var = f"{target}Sec"
 
-        append_lane_section_assignment(output, indent, section_var, base, side, tail)
+        append_lane_section_assignment(output, indent, section_var, base, side, tail, has_ego_lane_sec)
         output.append(f"{indent}{target} = {section_var}")
         changed = True
         i += 1
