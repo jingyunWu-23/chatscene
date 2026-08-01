@@ -138,11 +138,28 @@ class ScenicDataLoader:
             self.scenic.load_params(params)
         random.seed(opt_time)
         scenes = []
+        attempts = 0
+        max_attempts = max(sample_num * 100, 100)
         while len(scenes) < sample_num:
-            scene, _ = self.scenic.generateScene()
-            if self.scenic.setSimulation(scene):
-                scenes.append(scene)
-                self.scenic.endSimulation()
+            attempts += 1
+            if attempts > max_attempts:
+                raise RuntimeError(f'Failed to generate {sample_num} valid Scenic scenes after {max_attempts} attempts.')
+            try:
+                scene, _ = self.scenic.generateScene()
+                if self.scenic.setSimulation(scene):
+                    scenes.append(scene)
+                    self.scenic.endSimulation()
+            except AttributeError as e:
+                message = str(e)
+                if "'NoneType' object has no attribute" in message and (
+                    "'orientation'" in message or "'lane'" in message
+                ):
+                    try:
+                        self.scenic.endSimulation()
+                    except Exception:
+                        pass
+                    continue
+                raise
         self.scene.extend(scenes)
             
     def reset_idx_counter(self):

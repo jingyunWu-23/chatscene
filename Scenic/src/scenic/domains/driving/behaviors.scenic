@@ -59,6 +59,9 @@ behavior FollowLaneBehavior(target_speed = 10, laneToFollow=None, is_oppositeTra
         current_lane = self.lane
     else:
         current_lane = laneToFollow
+    if current_lane is None:
+        while True:
+            take SetBrakeAction(1.0)
 
     current_centerline = current_lane.centerline
     in_turning_lane = False # assumption that the agent is not instantiated within a connecting lane
@@ -252,6 +255,9 @@ behavior LaneChangeBehavior(laneSectionToSwitch, is_oppositeTraffic=False, targe
     brakeIntensity = 1.0
     distanceToEndpoint = 3 # meters
 
+    if laneSectionToSwitch is None:
+        while True:
+            take SetBrakeAction(1.0)
     current_lane = laneSectionToSwitch.lane
     traj_centerline = [current_lane.centerline]
     trajectory_centerline = concatenateCenterlines(traj_centerline)
