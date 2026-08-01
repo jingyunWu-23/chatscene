@@ -29,7 +29,7 @@ from safebench.scenario.tools.scenario_utils import scenario_parse
 
 from safebench.util.logger import Logger, setup_logger_kwargs
 from safebench.util.metric_util import get_route_scores, get_perception_scores
-from safebench.util.policy_util import save_policy_model
+from safebench.util.policy_util import load_policy_model, save_policy_model
 
 
 class CarlaRunner:
@@ -415,7 +415,7 @@ class CarlaRunner:
 
     def check_continue_training(self, policy, replay_buffer):
         # load previous checkpoint
-        policy.load_model(replay_buffer = replay_buffer)
+        load_policy_model(policy, replay_buffer)
         if policy.continue_episode == 0:
             start_episode = 0
             self.logger.log('>> Previous checkpoint not found. Training from scratch.')
