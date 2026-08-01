@@ -61,9 +61,15 @@ if oncomingLaneSec is None:
     oncomingLaneSec = laneSec
 require oncomingLaneSec is not None
 oncomingLane = oncomingLaneSec
+if oncomingLane is None:
+    oncomingLane = egoLaneSec
+require oncomingLane is not None
 # Spawn point in oncoming lane, ahead of blocker (so motorcyclist approaches blocker then swerves)
 oncomingSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
 projectedOncomingPos = Vector(*oncomingLane.centerline.project(oncomingSpawnPt.position).coords[0])
+if oncomingLane is None:
+    oncomingLane = egoLaneSec
+require oncomingLane is not None
 oncomingHeading = oncomingLane.orientation[projectedOncomingPos]
 
 # Adversarial agent starts in oncoming lane, facing opposite direction (i.e., 180° relative to ego's roadDirection)

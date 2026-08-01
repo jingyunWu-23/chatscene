@@ -65,12 +65,18 @@ if advLaneSec is None:
     advLaneSec = laneSec
 require advLaneSec is not None
 advLane = advLaneSec
+if advLane is None:
+    advLane = egoLaneSec
+require advLane is not None
 
 # Spawn point aligned longitudinally with ego, then shifted laterally into target lane
 BaseSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_LONGITUDINAL_DISTANCE
 # Project onto target lane centerline to ensure valid position in that lane
 projected = advLane.centerline.project(BaseSpawnPt.position)
 projectPt = Vector(*projected.coords[0])
+if advLane is None:
+    advLane = egoLaneSec
+require advLane is not None
 advHeading = advLane.orientation[projectPt]
 
 # Spawn the adversarial car at that projected point, with optional small lateral jitter to simulate "overlapping planned path"
@@ -84,6 +90,9 @@ AdvSpawnPt = BaseSpawnPt offset along (advHeading + 90 deg) by globalParameters.
 # Ensure final position lies on advLane (optional projection again for robustness)
 finalProjected = advLane.centerline.project(AdvSpawnPt.position)
 finalPt = Vector(*finalProjected.coords[0])
+if advLane is None:
+    advLane = egoLaneSec
+require advLane is not None
 finalHeading = advLane.orientation[finalPt]
 
 # Spawn the Adversarial Agent

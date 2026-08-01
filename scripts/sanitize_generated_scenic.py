@@ -37,6 +37,14 @@ LANE_SECTION_AT_EGO_RE = re.compile(
     r"^(?P<indent>\s*)(?P<section>[A-Za-z_][A-Za-z0-9_]*(?:Sec|Section))\s*=\s*"
     r"network\.laneSectionAt\(ego\)(?P<tail>\s*(?:#.*)?)$"
 )
+SECTION_ALIAS_ASSIGN_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
+    r"(?P<section>[A-Za-z_][A-Za-z0-9_]*(?:Sec|Section))(?P<tail>\s*(?:#.*)?)$"
+)
+ORIENTATION_ACCESS_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
+    r"(?P<obj>[A-Za-z_][A-Za-z0-9_]*)\.orientation\["
+)
 
 
 def opposite_side(side: str) -> str:
@@ -127,6 +135,57 @@ def sanitize_text(text: str) -> str:
                 f"{section_lane_match.group('section')}{section_lane_match.group('tail')}"
             )
             changed = True
+            i += 1
+            continue
+
+        section_alias_match = SECTION_ALIAS_ASSIGN_RE.match(line)
+        if section_alias_match and has_ego_lane_sec:
+            indent = section_alias_match.group("indent")
+            target = section_alias_match.group("target")
+            output.append(line)
+            output.append(f"{indent}if {target} is None:")
+            output.append(f"{indent}    {target} = egoLaneSec")
+            output.append(f"{indent}require {target} is not None")
+            changed = True
+            i += 1
+            while i < len(lines):
+                stripped = lines[i].strip()
+                if stripped == f"if {target} is None:":
+                    i += 1
+                    while i < len(lines) and lines[i].startswith(f"{indent}    "):
+                        i += 1
+                    continue
+                if stripped == f"require {target} is not None":
+                    i += 1
+                    continue
+                break
+            continue
+
+        orientation_match = ORIENTATION_ACCESS_RE.match(line)
+        if orientation_match and has_ego_lane_sec:
+            indent = orientation_match.group("indent")
+            obj = orientation_match.group("obj")
+            while output and (
+                output[-1].startswith(f"{indent}    ")
+                or output[-1].strip() in {
+                    f"if {obj} is None:",
+                    f"{obj} = egoLaneSec",
+                    f"require {obj} is not None",
+                }
+            ):
+                output.pop()
+            already_guarded = (
+                len(output) >= 3
+                and output[-3].strip() == f"if {obj} is None:"
+                and output[-2].strip() == f"{obj} = egoLaneSec"
+                and output[-1].strip() == f"require {obj} is not None"
+            )
+            if not already_guarded:
+                output.append(f"{indent}if {obj} is None:")
+                output.append(f"{indent}    {obj} = egoLaneSec")
+                output.append(f"{indent}require {obj} is not None")
+                changed = True
+            output.append(line)
             i += 1
             continue
 

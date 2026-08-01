@@ -55,7 +55,13 @@ if advLaneSec is None:
     advLaneSec = laneSec
 require advLaneSec is not None
 advLane = advLaneSec
+if advLane is None:
+    advLane = egoLaneSec
+require advLane is not None
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
+if advLane is None:
+    advLane = egoLaneSec
+require advLane is not None
 advHeading = advLane.orientation[projectPt]
 
 AdvAgent = Car at projectPt,

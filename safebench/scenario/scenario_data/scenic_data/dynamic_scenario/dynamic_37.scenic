@@ -50,6 +50,9 @@ if rightLaneSec is None:
     rightLaneSec = laneSec
 require rightLaneSec is not None
 rightLane = rightLaneSec
+if rightLane is None:
+    rightLane = egoLaneSec
+require rightLane is not None
 # If multiple right lanes exist and we want the *rightmost*, follow chain:
 while rightLane and rightLane._laneToRight:
     rightLaneSec = rightLane._laneToRight
@@ -59,6 +62,9 @@ while rightLane and rightLane._laneToRight:
         rightLaneSec = rightLane
     require rightLaneSec is not None
     rightLane = rightLaneSec
+    if rightLane is None:
+        rightLane = egoLaneSec
+    require rightLane is not None
 
 # Define a reference point ahead of ego in ego's lane to project from
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
@@ -69,6 +75,9 @@ IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalPar
 projectPt = IntSpawnPt offset perpendicular to IntSpawnPt.heading by globalParameters.OPT_GEO_X_DISTANCE
 
 # Ensure heading matches the target lane’s orientation at projected position
+if rightLane is None:
+    rightLane = egoLaneSec
+require rightLane is not None
 advHeading = rightLane.orientation[rightLane.centerline.project(projectPt).coords[0]]
 
 # Spawn the Adversarial Agent in the rightmost adjacent lane, approaching from the right

@@ -39,8 +39,14 @@ if advLaneSec is None:
     advLaneSec = egoLaneSec
 require advLaneSec is not None
 advLane = advLaneSec
+if advLane is None:
+    advLane = egoLaneSec
+require advLane is not None
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
+if advLane is None:
+    advLane = egoLaneSec
+require advLane is not None
 advHeading = advLane.orientation[projectPt]
 
 # Spawn the Adversarial Agent
