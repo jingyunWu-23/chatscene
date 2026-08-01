@@ -69,6 +69,9 @@ WITH_POSITION_RE = re.compile(r"^\s*with position\b")
 NETWORK_ROADS_AT_ASSIGN_RE = re.compile(
     r"^\s*(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*network\.roadsAt\(.+\)\s*(?:#.*)?$"
 )
+RANDOM_LEN_FALLBACK_RE = re.compile(
+    r"^(?P<indent>\s*)if len\((?P<target>[A-Za-z_][A-Za-z0-9_]*)\) == 0:\s*(?:#.*)?$"
+)
 UNIFORM_LIST_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
@@ -222,6 +225,30 @@ def filter_behavior_kwarg_lines(arg_lines, allowed_params):
     return kept, changed
 
 
+def strip_random_len_fallbacks(lines):
+    output = []
+    changed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        match = RANDOM_LEN_FALLBACK_RE.match(line)
+        if match:
+            indent = match.group("indent")
+            target = match.group("target")
+            j = i + 1
+            if (
+                j < len(lines)
+                and lines[j].startswith(f"{indent}    ")
+                and lines[j].strip().startswith(f"{target} = ")
+            ):
+                changed = True
+                i = j + 1
+                continue
+        output.append(line)
+        i += 1
+    return output, changed
+
+
 def fallback_lane_value(has_ego_lane_sec, var_name=None):
     if has_ego_lane_sec and var_name != "egoLaneSec":
         return "egoLaneSec"
@@ -252,9 +279,15 @@ def append_lane_section_assignment(output, indent, section_var, base, side, tail
 
 
 def sanitize_text(text: str) -> str:
+    original_text = text
     lines = text.splitlines()
+    lines, pre_changed = strip_random_len_fallbacks(lines)
+    if pre_changed:
+        text = "\n".join(lines)
+        if original_text.endswith("\n"):
+            text += "\n"
     output = []
-    changed = False
+    changed = pre_changed
     has_ego_lane_sec = any(re.match(r"^\s*egoLaneSec\s*=", line) for line in lines)
     local_behaviors = behavior_signatures(lines)
     offset_vars = offset_vector_vars(lines)
@@ -289,6 +322,20 @@ def sanitize_text(text: str) -> str:
             if not re.search(rf"\b{re.escape(target)}\b", later_text):
                 changed = True
                 i += 1
+                continue
+
+        random_len_fallback = RANDOM_LEN_FALLBACK_RE.match(line)
+        if random_len_fallback:
+            indent = random_len_fallback.group("indent")
+            target = random_len_fallback.group("target")
+            j = i + 1
+            if (
+                j < len(lines)
+                and lines[j].startswith(f"{indent}    ")
+                and lines[j].strip().startswith(f"{target} = ")
+            ):
+                changed = True
+                i = j + 1
                 continue
 
         if (
@@ -399,6 +446,10 @@ def sanitize_text(text: str) -> str:
         if uniform_list_match:
             indent = uniform_list_match.group("indent")
             source = uniform_list_match.group("source")
+            if source.lower().endswith("maneuvers"):
+                output.append(line)
+                i += 1
+                continue
             while output and (
                 output[-1].startswith(f"{indent}    ")
                 or output[-1].strip() in {
@@ -616,7 +667,7 @@ def sanitize_text(text: str) -> str:
         result = "\n".join(prefix + [result])
     if not result.endswith("\n"):
         result += "\n"
-    return result if changed or (missing_params and not inserted_missing_params) or (missing_models and not inserted_missing_models) else text
+    return result if changed or (missing_params and not inserted_missing_params) or (missing_models and not inserted_missing_models) else original_text
 
 
 def sanitize_file(path: Path) -> bool:

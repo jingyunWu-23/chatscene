@@ -31,8 +31,6 @@ ego = Car at egoSpawnPt,
     with blueprint EGO_MODEL
 # Defining adversarial maneuvers as those conflicting with the ego's straight path
 advManeuvers = filter(lambda i: i.type == ManeuverType.STRAIGHT, egoManeuver.conflictingManeuvers)
-if len(advManeuvers) == 0:
-    advManeuvers = network.laneSections
 advManeuver = Uniform(*advManeuvers)
 advTrajectory = [advManeuver.startLane, advManeuver.connectingLane, advManeuver.endLane]
 AdvManeuverConnectingLane = advManeuver.connectingLane
