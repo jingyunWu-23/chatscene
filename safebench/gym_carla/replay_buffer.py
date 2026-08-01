@@ -12,6 +12,24 @@ import numpy as np
 import torch
 
 
+def _sample_replay_indices(candidates, size):
+    if size <= 0:
+        return np.array([], dtype=int)
+    if len(candidates) == 0:
+        return np.array([], dtype=int)
+    replace = len(candidates) < size
+    return np.random.choice(candidates, size=size, replace=replace)
+
+
+def _concat_selected(parts):
+    parts = [part for part in parts if part is not None and len(part) > 0]
+    if not parts:
+        return np.array([])
+    if len(parts) == 1:
+        return parts[0]
+    return np.concatenate(parts)
+
+
 class RouteReplayBuffer:
     """
         This buffer supports parallel storing transitions from multiple trajectories.
@@ -252,45 +270,69 @@ class RouteReplayBuffer:
         # sample from concatenated list
         # the first sample does not have previous state ()
             
-        if len(prepared_collision_rewards)-1 < batch_size//5:
-            sample_index = np.random.choice(np.arange(1, len(prepared_rewards)), size=batch_size-len(prepared_collision_rewards), replace=False)
-            collision_sample_index = np.arange(1, len(prepared_collision_rewards))
+        sample_candidates = np.arange(1, len(prepared_rewards))
+        collision_candidates = np.arange(1, len(prepared_collision_rewards))
+        if len(sample_candidates) == 0 and len(collision_candidates) == 0:
+            raise ValueError('Replay buffer does not contain enough transitions to sample.')
+
+        if len(sample_candidates) == 0:
+            sample_count = 0
+            collision_count = batch_size
+        elif len(collision_candidates) == 0:
+            sample_count = batch_size
+            collision_count = 0
         else:
-            sample_index = np.random.choice(np.arange(1, len(prepared_rewards)), size=batch_size - batch_size//5, replace=False)
-            collision_sample_index = np.random.choice(np.arange(1, len(prepared_collision_rewards)), size=batch_size//5, replace=False)
+            collision_count = batch_size // 5
+            sample_count = batch_size - collision_count
+
+        sample_index = _sample_replay_indices(sample_candidates, sample_count)
+        collision_sample_index = _sample_replay_indices(collision_candidates, collision_count)
 
         # prepare batch 
         action = prepared_ego_actions if self.mode == 'train_agent' else prepared_scenario_actions
         collision_action = prepared_collision_ego_actions if self.mode == 'train_agent' else prepared_collision_scenario_actions
-        
-        if not collision_action:
-            batch = {
-    'action': np.stack(action)[sample_index],  # action
-    'state': np.stack(prepared_obs)[sample_index, :],  # state
-    'n_state': np.stack(prepared_next_obs)[sample_index, :],  # next state
-    'reward': np.stack(prepared_rewards)[sample_index],  # reward
-    'done': np.stack(prepared_dones)[sample_index]  # done
+
+        batch = {
+            'action': _concat_selected([
+                np.stack(action)[sample_index] if len(sample_index) else None,
+                np.stack(collision_action)[collision_sample_index] if len(collision_sample_index) else None,
+            ]),
+            'state': _concat_selected([
+                np.stack(prepared_obs)[sample_index, :] if len(sample_index) else None,
+                np.stack(prepared_collision_obs)[collision_sample_index] if len(collision_sample_index) else None,
+            ]),
+            'n_state': _concat_selected([
+                np.stack(prepared_next_obs)[sample_index, :] if len(sample_index) else None,
+                np.stack(prepared_collision_next_obs)[collision_sample_index] if len(collision_sample_index) else None,
+            ]),
+            'reward': _concat_selected([
+                np.stack(prepared_rewards)[sample_index] if len(sample_index) else None,
+                np.stack(prepared_collision_rewards)[collision_sample_index] if len(collision_sample_index) else None,
+            ]),
+            'done': _concat_selected([
+                np.stack(prepared_dones)[sample_index] if len(sample_index) else None,
+                np.stack(prepared_collision_dones)[collision_sample_index] if len(collision_sample_index) else None,
+            ]),
         }
-        else:
-            batch = {
-    'action': np.concatenate([np.stack(action)[sample_index], np.stack(collision_action)[collision_sample_index]]),  # action
-    'state': np.concatenate([np.stack(prepared_obs)[sample_index, :], np.stack(prepared_collision_obs)[collision_sample_index]]),  # state
-    'n_state': np.concatenate([np.stack(prepared_next_obs)[sample_index, :], np.stack(prepared_collision_next_obs)[collision_sample_index]]),  # next state
-    'reward': np.concatenate([np.stack(prepared_rewards)[sample_index], np.stack(prepared_collision_rewards)[collision_sample_index]]),  # reward
-    'done': np.concatenate([np.stack(prepared_dones)[sample_index], np.stack(prepared_collision_dones)[collision_sample_index]])  # done
-}
 
         # add additional information to the batch
         batch_info = {} 
-        for k_i in prepared_infos.keys():
+        for k_i in set(prepared_infos.keys()) | set(prepared_collision_infos.keys()):
             if k_i in ['route_waypoints', 'actor_info']:
                 continue
-            if not collision_action:
-                batch_info[k_i] = np.stack(prepared_infos[k_i])[sample_index-1]
-                batch_info['n_' + k_i] = np.stack(prepared_infos[k_i])[sample_index]
-            else:
-                batch_info[k_i] = np.concatenate([np.stack(prepared_infos[k_i])[sample_index-1], np.stack(prepared_collision_infos[k_i])[collision_sample_index-1]])
-                batch_info['n_' + k_i] = np.concatenate([np.stack(prepared_infos[k_i])[sample_index], np.stack(prepared_collision_infos[k_i])[collision_sample_index-1]])
+            info_parts = []
+            next_info_parts = []
+            if len(sample_index) and k_i in prepared_infos:
+                info_values = np.stack(prepared_infos[k_i])
+                info_parts.append(info_values[sample_index-1])
+                next_info_parts.append(info_values[sample_index])
+            if len(collision_sample_index) and k_i in prepared_collision_infos:
+                collision_info_values = np.stack(prepared_collision_infos[k_i])
+                info_parts.append(collision_info_values[collision_sample_index-1])
+                next_info_parts.append(collision_info_values[collision_sample_index])
+            if info_parts:
+                batch_info[k_i] = _concat_selected(info_parts)
+                batch_info['n_' + k_i] = _concat_selected(next_info_parts)
     
         # combine two dicts
         batch.update(batch_info)
