@@ -32,6 +32,7 @@ from safebench.scenario.tools.scenario_utils import scenario_parse, scenic_parse
 
 from safebench.util.logger import Logger, setup_logger_kwargs
 from safebench.util.metric_util import get_route_scores, get_perception_scores
+from safebench.util.policy_util import save_policy_model
 from safebench.util.scenic_utils import ScenicSimulator
 
 class ScenicRunner:
@@ -274,7 +275,7 @@ class ScenicRunner:
             # save checkpoints
             if (self.current_episode+1) % self.save_freq == 0:
                 if self.mode == 'train_agent':
-                    self.agent_policy.save_model(self.current_episode, replay_buffer)
+                    save_policy_model(self.agent_policy, self.current_episode, replay_buffer)
                 if self.mode == 'train_scenario':
                     self.scenario_policy.save_model(self.current_episode)
         
