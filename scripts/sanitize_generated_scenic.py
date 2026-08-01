@@ -61,6 +61,11 @@ OFFSET_ASSIGN_RE = re.compile(
 WALKING_DIRECTION_FROM_RE = re.compile(
     r"SetWalkingDirectionAction\(direction from (?P<source>[^)]+?) to (?P<target>[^)]+?)\)"
 )
+OBJECT_WITH_POSITION_RE = re.compile(
+    r"^\s*[A-Za-z_][A-Za-z0-9_]*\s*=\s*[A-Za-z_][A-Za-z0-9_]*\s+"
+    r"(?:at|on|in|left of|right of|front of|back of|following)\b.*,\s*(?:#.*)?$"
+)
+WITH_POSITION_RE = re.compile(r"^\s*with position\b")
 UNIFORM_LIST_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
@@ -254,9 +259,26 @@ def sanitize_text(text: str) -> str:
     missing_models = missing_model_defs(lines)
     inserted_missing_params = False
     inserted_missing_models = False
+    object_position_spec_indent = None
     i = 0
     while i < len(lines):
         line = lines[i]
+        current_indent = len(line) - len(line.lstrip())
+        if object_position_spec_indent is not None and line.strip():
+            if current_indent <= object_position_spec_indent:
+                object_position_spec_indent = None
+
+        if OBJECT_WITH_POSITION_RE.match(line):
+            output.append(line)
+            object_position_spec_indent = current_indent
+            i += 1
+            continue
+
+        if object_position_spec_indent is not None and WITH_POSITION_RE.match(line):
+            changed = True
+            i += 1
+            continue
+
         if (
             (missing_params and not inserted_missing_params)
             or (missing_models and not inserted_missing_models)

@@ -45,7 +45,6 @@ if egoLaneSec is None:
     egoLaneSec = Uniform(*network.laneSections)
 require egoLaneSec is not None
 parkedCar = Car on egoLaneSec.centerline,
-    with position egoSpawnPt.position,
     with heading egoSpawnPt.heading,
     with blueprint PARKED_CAR_MODEL
 # Parameters for scenario elements
