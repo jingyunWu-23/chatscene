@@ -155,6 +155,7 @@ class ScenicDataLoader:
                     "'orientation'",
                     "'lane'",
                     "'centerline'",
+                    "'position'",
                     "'startLane'",
                     "'endLane'",
                     "'connectingLane'",

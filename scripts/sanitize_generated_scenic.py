@@ -55,6 +55,9 @@ SCALAR_OFFSET_ALONG_RE = re.compile(
 UNPARENTHESIZED_OFFSET_VECTOR_RE = re.compile(
     r"^(?P<prefix>.*\boffset along .+ by )(?P<value>globalParameters\.OPT_[A-Za-z0-9_]+)\s*@\s*0(?P<tail>\s*,?\s*(?:#.*)?)$"
 )
+OFFSET_ASSIGN_RE = re.compile(
+    r"^\s*(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*.*\boffset along\b"
+)
 UNIFORM_LIST_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
@@ -107,6 +110,16 @@ def missing_opt_params(lines):
             defs.add(match.group(1))
         refs.update(OPT_REF_RE.findall(code))
     return sorted(refs - defs)
+
+
+def offset_vector_vars(lines):
+    vars_ = set()
+    for line in lines:
+        code = line.split("#", 1)[0]
+        match = OFFSET_ASSIGN_RE.match(code)
+        if match:
+            vars_.add(match.group("target"))
+    return vars_
 
 
 def behavior_signatures(lines):
@@ -211,6 +224,7 @@ def sanitize_text(text: str) -> str:
     changed = False
     has_ego_lane_sec = any(re.match(r"^\s*egoLaneSec\s*=", line) for line in lines)
     local_behaviors = behavior_signatures(lines)
+    offset_vars = offset_vector_vars(lines)
     missing_params = missing_opt_params(lines)
     inserted_missing_params = False
     i = 0
@@ -221,6 +235,19 @@ def sanitize_text(text: str) -> str:
             for name in missing_params:
                 output.append(f"param {name} = {default_param_value(name)}")
             inserted_missing_params = True
+            changed = True
+            i += 1
+            continue
+
+        rewritten_position_line = line
+        for var_name in sorted(offset_vars, key=len, reverse=True):
+            rewritten_position_line = re.sub(
+                rf"\b{re.escape(var_name)}\.position\b",
+                var_name,
+                rewritten_position_line,
+            )
+        if rewritten_position_line != line:
+            output.append(rewritten_position_line)
             changed = True
             i += 1
             continue

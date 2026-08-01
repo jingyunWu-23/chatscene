@@ -68,7 +68,7 @@ IntSpawnPt = OrientedPoint at projectPt with heading advHeading
 AdvSpawnPt = IntSpawnPt offset along advHeading by (globalParameters.OPT_GEO_Y_DISTANCE @ 0)
 
 # Spawn the Adversarial Agent
-AdvAgent = Car at AdvSpawnPt.position,
+AdvAgent = Car at AdvSpawnPt,
     with heading advHeading,
     with regionContainedIn None,
     with behavior AdvBehavior()

@@ -46,7 +46,7 @@ IntSpawnPt = egoSpawnPt offset along egoSpawnPt.heading by (globalParameters.OPT
 if advLane is None:
     advLane = Uniform(*network.laneSections)
 require advLane is not None
-projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
+projectPt = Vector(*advLane.centerline.project(IntSpawnPt).coords[0])
 advHeading = advLane.orientation[projectPt]
 
 # Spawn the Adversarial Agent

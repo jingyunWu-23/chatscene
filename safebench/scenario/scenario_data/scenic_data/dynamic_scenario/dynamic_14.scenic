@@ -103,7 +103,7 @@ if advLane is None:
     if advLane is None:
         advLane = egoLaneSec
     require advLane is not None
-finalProjected = advLane.centerline.project(AdvSpawnPt.position)
+finalProjected = advLane.centerline.project(AdvSpawnPt)
 finalPt = Vector(*finalProjected.coords[0])
 if advLane is None:
     advLane = egoLaneSec

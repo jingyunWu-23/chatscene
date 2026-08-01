@@ -76,7 +76,7 @@ BackOffsetPt = IntSpawnPt offset along IntSpawnPt.heading by SHIFT_BACK
 if leftLegRoad is None:
     leftLegRoad = Uniform(*network.laneSections)
 require leftLegRoad is not None
-projected = Vector(*leftLegRoad.centerline.project(BackOffsetPt.position).coords[0])
+projected = Vector(*leftLegRoad.centerline.project(BackOffsetPt).coords[0])
 advHeading = leftLegRoad.orientation[projected]
 
 # Spawn the Adversarial Agent
