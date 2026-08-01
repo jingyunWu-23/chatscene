@@ -231,6 +231,8 @@ class ScenicRunner:
                 obs = copy.deepcopy(next_obs)
                 episode_reward.append(np.mean(rewards))
 
+            loss = None
+
             # train off-policy agent or scenario
             if self.mode == 'train_agent' and self.agent_policy.type == 'offpolicy':
                 loss = self.agent_policy.train(replay_buffer)
