@@ -271,15 +271,39 @@ class CarlaSimulation(DrivingSimulation):
 			if obj.carlaActor is not None:
 				actor_list.append(obj.carlaActor)
 				if isinstance(obj.carlaActor, carla.Vehicle):
-					obj.carlaActor.set_autopilot(False, self.tm.get_port())
+					try:
+						obj.carlaActor.set_autopilot(False, self.tm.get_port())
+					except RuntimeError as e:
+						if 'destroyed actor' not in str(e):
+							raise
 				if isinstance(obj.carlaActor, carla.Walker):
-					obj.carlaController.stop()
-					obj.carlaController.destroy()
-		self.client.apply_batch([carla.command.DestroyActor(x) for x in actor_list])
+					try:
+						obj.carlaController.stop()
+					except RuntimeError as e:
+						if 'destroyed actor' not in str(e):
+							raise
+					try:
+						obj.carlaController.destroy()
+					except RuntimeError as e:
+						if 'destroyed actor' not in str(e):
+							raise
+		try:
+			self.client.apply_batch([carla.command.DestroyActor(x) for x in actor_list])
+		except RuntimeError as e:
+			if 'destroyed actor' not in str(e):
+				raise
 		if self.render and self.cameraManager:
 			self.cameraManager.destroy_sensor()
 
-		self.client.stop_recorder()
+		try:
+			self.client.stop_recorder()
+		except RuntimeError as e:
+			if 'destroyed actor' not in str(e):
+				raise
 
-		self.world.tick()
+		try:
+			self.world.tick()
+		except RuntimeError as e:
+			if 'destroyed actor' not in str(e):
+				raise
 		super().destroy()
