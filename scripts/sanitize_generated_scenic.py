@@ -61,6 +61,13 @@ OFFSET_ASSIGN_RE = re.compile(
 WALKING_DIRECTION_FROM_RE = re.compile(
     r"SetWalkingDirectionAction\(direction from (?P<source>[^)]+?) to (?P<target>[^)]+?)\)"
 )
+ROAD_DIRECTION_ROTATE_ASSIGN_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
+    r"rotateVector\(roadDirection,\s*(?P<angle>[-+]?\d+)\s*deg\)(?P<tail>\s*(?:#.*)?)$"
+)
+ROAD_DIRECTION_ROTATE_HEADING_RE = re.compile(
+    r"(?P<prefix>with heading\s+)rotateVector\(roadDirection,\s*(?P<angle>[-+]?\d+)\s*deg\)"
+)
 OBJECT_WITH_POSITION_RE = re.compile(
     r"^\s*[A-Za-z_][A-Za-z0-9_]*\s*=\s*[A-Za-z_][A-Za-z0-9_]*\s+"
     r"(?:at|on|in|left of|right of|front of|back of|following)\b.*,\s*(?:#.*)?$"
@@ -351,6 +358,31 @@ def sanitize_text(text: str) -> str:
                 for name in missing_params:
                     output.append(f"param {name} = {default_param_value(name)}")
                 inserted_missing_params = True
+            changed = True
+            i += 1
+            continue
+
+        rotate_assign_match = ROAD_DIRECTION_ROTATE_ASSIGN_RE.match(line)
+        if rotate_assign_match:
+            angle = int(rotate_assign_match.group("angle"))
+            output.append(
+                f"{rotate_assign_match.group('indent')}{rotate_assign_match.group('target')} = "
+                f"Vector(cos(egoSpawnPt.heading + {angle} deg), "
+                f"sin(egoSpawnPt.heading + {angle} deg)){rotate_assign_match.group('tail')}"
+            )
+            changed = True
+            i += 1
+            continue
+
+        rotate_heading_match = ROAD_DIRECTION_ROTATE_HEADING_RE.search(line)
+        if rotate_heading_match:
+            angle = int(rotate_heading_match.group("angle"))
+            output.append(
+                ROAD_DIRECTION_ROTATE_HEADING_RE.sub(
+                    f"{rotate_heading_match.group('prefix')}egoSpawnPt.heading + {angle} deg",
+                    line,
+                )
+            )
             changed = True
             i += 1
             continue

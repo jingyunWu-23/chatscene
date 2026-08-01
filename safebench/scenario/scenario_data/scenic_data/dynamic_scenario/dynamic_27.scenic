@@ -63,9 +63,9 @@ param OPT_BLOCKER_Y_DISTANCE = Range(0, 5)    # For optional blocker placement i
 
 # Compute spawn point in ego's local right direction (perpendicular to roadDirection)
 # Note: roadDirection is the forward direction of ego's lane; right is rotated -90 deg
-rightDir = rotateVector(roadDirection, -90 deg)
+rightDir = Vector(cos(egoSpawnPt.heading + -90 deg), sin(egoSpawnPt.heading + -90 deg))
 IntSpawnPt = OrientedPoint at (egoSpawnPt.position + rightDir * globalParameters.OPT_GEO_X_DISTANCE),
-    with heading rotateVector(roadDirection, 90 deg)  # Adversarial agent comes *from the right*, so its heading is ~+90 deg (i.e., toward ego's forward direction)
+    with heading egoSpawnPt.heading + 90 deg  # Adversarial agent comes *from the right*, so its heading is ~+90 deg (i.e., toward ego's forward direction)
 
 # Find the nearest lane to IntSpawnPt that is part of a *crossing* road (i.e., roughly orthogonal).
 # Since Scenic 2.1 doesn’t provide direct intersection lane lookup, we use the most robust fallback:
