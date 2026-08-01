@@ -65,7 +65,8 @@ if __name__ == '__main__':
             agent_config['policy_name'] = args.test_policy
           
             ## load the corresponding model ##
-            agent_config['load_dir'] = osp.join(agent_config['load_dir'], "dynamic_scenario")
+            if 'load_dir' in agent_config:
+                agent_config['load_dir'] = osp.join(agent_config['load_dir'], "dynamic_scenario")
             
             # load scenario config
             scenario_config_path = osp.join(args.ROOT_DIR, 'safebench/scenario/config', scenario_cfg)
@@ -76,7 +77,7 @@ if __name__ == '__main__':
             args_dict = vars(args)
             # main entry with a selected mode
             agent_config.update(args_dict)
-            print(agent_config['load_dir'])
+            print(agent_config.get('load_dir', agent_config.get('model_path')))
             scenario_config.update(args_dict)
 
             scenario_config['num_scenario'] = 1 # 'the num_scenario can only be one for scenic'
