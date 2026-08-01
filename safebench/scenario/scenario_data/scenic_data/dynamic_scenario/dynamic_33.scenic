@@ -31,6 +31,10 @@ LeadingAgent = Car at LeadingSpawnPt,
 # and setting its spawn point ahead on that lane
 param OPT_GEO_Y_DISTANCE = Range(0, 30)
 advLaneSec = network.laneSectionAt(ego)._laneToRight
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)._laneToLeft
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
 advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

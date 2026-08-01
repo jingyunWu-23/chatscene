@@ -41,11 +41,19 @@ param OPT_GEO_X_DISTANCE = Range(5, 15)   # Lateral offset into the right adjace
 # Identify the rightmost adjacent lane(s) — traverse _laneToRight chain until no more right lane exists
 laneSec = network.laneSectionAt(ego)
 rightLaneSec = laneSec._laneToRight
+if rightLaneSec is None:
+    rightLaneSec = laneSec._laneToLeft
+if rightLaneSec is None:
+    rightLaneSec = laneSec
 require rightLaneSec is not None
 rightLane = rightLaneSec.lane
 # If multiple right lanes exist and we want the *rightmost*, follow chain:
 while rightLane and rightLane._laneToRight:
     rightLaneSec = rightLane._laneToRight
+    if rightLaneSec is None:
+        rightLaneSec = rightLane._laneToLeft
+    if rightLaneSec is None:
+        rightLaneSec = rightLane
     require rightLaneSec is not None
     rightLane = rightLaneSec.lane
 

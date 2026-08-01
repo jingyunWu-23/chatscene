@@ -42,6 +42,10 @@ param OPT_GEO_X_DISTANCE = Range(1, 5)   # Lateral offset to the right
 
 # Identifying the adjacent right lane for the Adversarial Agent
 advLaneSec = network.laneSectionAt(ego)._laneToRight
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)._laneToLeft
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
 advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for -globalParameters.OPT_GEO_Y_DISTANCE

@@ -89,6 +89,10 @@ rightmostLanes = [advLane]
 cur = advLane
 while cur._laneToRight is not None:
     curSec = cur._laneToRight
+    if curSec is None:
+        curSec = cur._laneToLeft
+    if curSec is None:
+        curSec = cur
     require curSec is not None
     cur = curSec.lane
     rightmostLanes.append(cur)

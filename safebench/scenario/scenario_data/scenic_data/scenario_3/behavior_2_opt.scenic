@@ -30,6 +30,10 @@ LeadingAgent = Car following roadDirection from NewSpawnPt for globalParameters.
 
 laneSec = network.laneSectionAt(EgoSpawnPt)
 advLaneSec = laneSec._laneToRight
+if advLaneSec is None:
+    advLaneSec = laneSec._laneToLeft
+if advLaneSec is None:
+    advLaneSec = laneSec
 require advLaneSec is not None
 advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from EgoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

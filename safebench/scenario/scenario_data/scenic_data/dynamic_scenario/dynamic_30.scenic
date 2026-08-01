@@ -34,6 +34,10 @@ param OPT_GEO_Y_DISTANCE = Range(-5, 5)    # Longitudinal offset relative to int
 # we approximate using the ego's current lane section and its lateral left extension near the upcoming junction.
 laneSec = network.laneSectionAt(ego)
 leftLaneSec = laneSec._laneToLeft
+if leftLaneSec is None:
+    leftLaneSec = laneSec._laneToRight
+if leftLaneSec is None:
+    leftLaneSec = laneSec
 require leftLaneSec is not None
 leftLane = leftLaneSec.lane
 

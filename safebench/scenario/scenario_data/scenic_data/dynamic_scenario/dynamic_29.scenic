@@ -48,6 +48,10 @@ param OPT_GEO_Y_DISTANCE = Range(10, 50)  # Distance ahead of ego across the int
 # with ego's forward direction beyond the intersection point.
 laneSec = network.laneSectionAt(ego)
 oncomingLaneSec = laneSec._laneToLeft
+if oncomingLaneSec is None:
+    oncomingLaneSec = laneSec._laneToRight
+if oncomingLaneSec is None:
+    oncomingLaneSec = laneSec
 require oncomingLaneSec is not None
 oncomingLane = oncomingLaneSec.lane
 

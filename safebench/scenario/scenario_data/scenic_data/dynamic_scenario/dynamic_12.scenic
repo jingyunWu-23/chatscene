@@ -52,6 +52,10 @@ LeadingAgent = Car at LeadingSpawnPt,
 # Given symmetry and prior examples using both, and no directional cue in description, we choose _laneToRight
 # (consistent with first example, and most common merge scenario unless stated otherwise).
 advLaneSec = network.laneSectionAt(ego)._laneToRight
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)._laneToLeft
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
 advLane = advLaneSec.lane
 

@@ -31,6 +31,10 @@ param OPT_GEO_Y_DISTANCE = Range(5, 25)      # longitudinal distance ahead along
 # Since Scenic 2.1 does not expose direct "intersection incoming lanes", we use the left-adjacent lane section *at the intersection entrance*
 # First, get ego's current lane section and its left neighbor; then project forward along that left neighbor's centerline
 advLaneSec = network.laneSectionAt(ego)._laneToLeft
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)._laneToRight
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
 advLane = advLaneSec.lane
 # Spawn point offset along advLane’s centerline, starting from where it aligns with ego’s position laterally

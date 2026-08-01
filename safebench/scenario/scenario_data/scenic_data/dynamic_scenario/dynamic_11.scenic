@@ -38,6 +38,10 @@ ego = Car at egoSpawnPt,
 # Identifying the adjacent lane to the right for the Adversarial Agent and setting its spawn point laterally aligned with ego
 param OPT_LATERAL_OFFSET = Range(0, 5)
 advLaneSec = network.laneSectionAt(ego)._laneToRight
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)._laneToLeft
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
 advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for 0

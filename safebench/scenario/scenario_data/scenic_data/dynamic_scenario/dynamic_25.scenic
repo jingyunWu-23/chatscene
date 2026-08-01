@@ -45,6 +45,10 @@ param OPT_GEO_Y_DISTANCE = Range(10, 40)     # Distance ahead along the oncoming
 # Identify the oncoming lane: assume ego is on a two-way road; _laneToLeft is the opposing-direction lane
 laneSec = network.laneSectionAt(ego)
 oncomingLaneSec = laneSec._laneToLeft
+if oncomingLaneSec is None:
+    oncomingLaneSec = laneSec._laneToRight
+if oncomingLaneSec is None:
+    oncomingLaneSec = laneSec
 require oncomingLaneSec is not None
 oncomingLane = oncomingLaneSec.lane
 

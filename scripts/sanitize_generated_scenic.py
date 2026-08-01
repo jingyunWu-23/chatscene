@@ -21,16 +21,67 @@ LANE_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"(?P<base>.+?)(?P<side>\._[A-Za-z0-9]*Lane)\.lane(?P<tail>\s*(?:#.*)?)$"
 )
+SPLIT_LANE_ASSIGN_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<section>[A-Za-z_][A-Za-z0-9_]*Sec)\s*=\s*"
+    r"(?P<base>.+?)(?P<side>\._laneTo(?:Left|Right))(?P<tail>\s*(?:#.*)?)$"
+)
+
+
+def opposite_side(side: str) -> str:
+    return "._laneToLeft" if side == "._laneToRight" else "._laneToRight"
+
+
+def append_lane_section_assignment(output, indent, section_var, base, side, tail):
+    output.append(f"{indent}{section_var} = {base}{side}{tail}")
+    if side in ("._laneToLeft", "._laneToRight"):
+        output.append(f"{indent}if {section_var} is None:")
+        output.append(f"{indent}    {section_var} = {base}{opposite_side(side)}")
+    output.append(f"{indent}if {section_var} is None:")
+    output.append(f"{indent}    {section_var} = {base}")
+    output.append(f"{indent}require {section_var} is not None")
 
 
 def sanitize_text(text: str) -> str:
     lines = text.splitlines()
     output = []
     changed = False
-    for line in lines:
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        split_match = SPLIT_LANE_ASSIGN_RE.match(line)
+        if split_match:
+            indent = split_match.group("indent")
+            section_var = split_match.group("section")
+            base = split_match.group("base").strip()
+            side = split_match.group("side")
+            tail = split_match.group("tail")
+            append_lane_section_assignment(output, indent, section_var, base, side, tail)
+            changed = True
+            i += 1
+            while i < len(lines):
+                stripped = lines[i].strip()
+                if stripped == f"if {section_var} is None:":
+                    i += 1
+                    while i < len(lines) and lines[i].startswith(f"{indent}    "):
+                        i += 1
+                    continue
+                if stripped == f"require {section_var} is not None":
+                    i += 1
+                    continue
+                break
+            continue
+
+        if output and output[-1].lstrip().startswith("require "):
+            required_var = output[-1].strip().split()[1]
+            if line.strip() == f"require {required_var} is not None":
+                changed = True
+                i += 1
+                continue
+
         match = LANE_ASSIGN_RE.match(line)
         if not match:
             output.append(line)
+            i += 1
             continue
 
         indent = match.group("indent")
@@ -40,10 +91,10 @@ def sanitize_text(text: str) -> str:
         tail = match.group("tail")
         section_var = f"{target}Sec"
 
-        output.append(f"{indent}{section_var} = {base}{side}{tail}")
-        output.append(f"{indent}require {section_var} is not None")
+        append_lane_section_assignment(output, indent, section_var, base, side, tail)
         output.append(f"{indent}{target} = {section_var}.lane")
         changed = True
+        i += 1
 
     result = "\n".join(output)
     if text.endswith("\n"):

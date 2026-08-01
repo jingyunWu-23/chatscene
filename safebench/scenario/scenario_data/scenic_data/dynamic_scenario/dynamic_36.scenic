@@ -35,6 +35,10 @@ param OPT_ADV_SPEED = Range(0, 3)
 
 # Get the right-adjacent lane of the ego's current lane section (approach lane to intersection)
 advLaneSec = network.laneSectionAt(ego)._laneToRight
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)._laneToLeft
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
 advLane = advLaneSec.lane
 # Use a point near the start of the lane (approach side) to position near intersection

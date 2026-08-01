@@ -538,6 +538,11 @@ class Lane(_ContainsCenterline, LinearElement):
                 return section._laneToRight
         return None
 
+    @property
+    def lane(self) -> Lane:
+        """Compatibility shim allowing a Lane to be used where a LaneSection was expected."""
+        return self
+
     @distributionFunction
     def sectionAt(self, point: Vectorlike, reject=False) -> Union[LaneSection, None]:
         """Get the LaneSection passing through a given point."""

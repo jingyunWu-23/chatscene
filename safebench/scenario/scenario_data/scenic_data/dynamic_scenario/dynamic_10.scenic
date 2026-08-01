@@ -44,6 +44,10 @@ param OPT_MERGE_DISTANCE = Range(-5, 5)  # Longitudinal offset during merge (to 
 # Identify the target lane (e.g., _laneToRight for right merge; _laneToLeft for left merge — assumed configurable via context)
 # Since direction is not specified as left/right in description, we use generic lateral offset approach
 advLaneSec = network.laneSectionAt(ego)._laneToRight  # Default to right lane; adjust per scenario variant if needed
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)._laneToLeft
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
 advLane = advLaneSec.lane
 

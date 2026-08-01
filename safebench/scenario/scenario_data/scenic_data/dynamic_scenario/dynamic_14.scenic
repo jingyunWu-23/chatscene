@@ -56,6 +56,10 @@ param OPT_MANEUVER_SPEED = Range(3, 8)          # Speed during lane-crossing man
 
 laneSec = network.laneSectionAt(ego)
 advLaneSec = laneSec._laneToRight
+if advLaneSec is None:
+    advLaneSec = laneSec._laneToLeft
+if advLaneSec is None:
+    advLaneSec = laneSec
 require advLaneSec is not None
 advLane = advLaneSec.lane
 

@@ -45,6 +45,10 @@ param OPT_GEO_Y_DISTANCE = Range(10, 50)  # Distance ahead along road direction 
 # Identify the oncoming lane (assumed to be _laneToLeft in a two-lane undivided road; consistent with prior examples)
 laneSec = network.laneSectionAt(ego)
 advLaneSec = laneSec._laneToLeft
+if advLaneSec is None:
+    advLaneSec = laneSec._laneToRight
+if advLaneSec is None:
+    advLaneSec = laneSec
 require advLaneSec is not None
 advLane = advLaneSec.lane
 

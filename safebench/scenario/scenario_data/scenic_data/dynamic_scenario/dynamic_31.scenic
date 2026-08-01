@@ -27,6 +27,10 @@ ego = Car at egoSpawnPt,
 
 # Identifying the target lane for the right turn (i.e., the lane to the right of ego's current lane, aligned with turn direction)
 advLaneSec = network.laneSectionAt(ego)._laneToRight
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)._laneToLeft
+if advLaneSec is None:
+    advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
 advLane = advLaneSec.lane
 
