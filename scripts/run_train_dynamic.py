@@ -14,6 +14,12 @@ except ModuleNotFoundError:
 import traceback
 import os
 import os.path as osp
+import sys
+
+ROOT_DIR = osp.abspath(osp.dirname(osp.dirname(osp.realpath(__file__))))
+SCENIC_SRC = osp.join(ROOT_DIR, 'Scenic', 'src')
+if osp.isdir(SCENIC_SRC):
+    sys.path.insert(0, SCENIC_SRC)
 
 import torch 
 from safebench.util.run_util import load_config
@@ -26,7 +32,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_name', type=str, default='exp')
     parser.add_argument('--output_dir', type=str, default='log')
-    parser.add_argument('--ROOT_DIR', type=str, default=osp.abspath(osp.dirname(osp.dirname(osp.realpath(__file__)))))
+    parser.add_argument('--ROOT_DIR', type=str, default=ROOT_DIR)
 
     parser.add_argument('--max_episode_step', type=int, default=300)
     parser.add_argument('--auto_ego', action='store_true')
