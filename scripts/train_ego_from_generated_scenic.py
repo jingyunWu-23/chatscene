@@ -68,6 +68,16 @@ def scenic_files(scenic_dir: Path):
     return files
 
 
+def sanitize_generated_scenic(files):
+    from scripts.sanitize_generated_scenic import sanitize_file
+
+    changed = []
+    for scenic_file in files:
+        if sanitize_file(scenic_file):
+            changed.append(scenic_file)
+    return changed
+
+
 def parse_opt_ranges(scenic_file: Path):
     text = scenic_file.read_text(encoding="utf-8")
     pattern = re.compile(
@@ -122,6 +132,7 @@ def main():
 
     scenic_dir = Path(args.scenic_dir).expanduser().resolve()
     files = scenic_files(scenic_dir)
+    sanitized = sanitize_generated_scenic(files)
     param_json = None
     if args.layout == "dynamic":
         param_json = ensure_dynamic_param_json(
@@ -191,6 +202,8 @@ def main():
 
     print(f"Scenic dir: {scenic_dir}")
     print(f"Scenic files: {len(files)}")
+    if sanitized:
+        print(f"Sanitized Scenic files: {len(sanitized)}")
     if param_json:
         print(f"Param json: {param_json}")
     print(f"Model dir: {model_path}")

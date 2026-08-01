@@ -88,7 +88,9 @@ advHeading = advLane.orientation[projectPt]
 rightmostLanes = [advLane]
 cur = advLane
 while cur._laneToRight is not None and cur._laneToRight.lane is not None:
-    cur = cur._laneToRight.lane
+    curSec = cur._laneToRight
+    require curSec is not None
+    cur = curSec.lane
     rightmostLanes.append(cur)
 # Use the union of those lanes as containment region
 advRegion = UnionRegion(rightmostLanes)

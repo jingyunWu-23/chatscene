@@ -26,7 +26,9 @@ ego = Car at egoSpawnPt,
 # Note: Description does not mention a blocker/leading vehicle, so none is added unless implied; here, no blocker is specified.
 
 # Identifying the target lane for the right turn (i.e., the lane to the right of ego's current lane, aligned with turn direction)
-advLane = network.laneSectionAt(ego)._laneToRight.lane
+advLaneSec = network.laneSectionAt(ego)._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 
 # Compute a spawn point ahead and to the right relative to ego's pre-turn orientation,
 # i.e., offset from egoSpawnPt along ego's heading (forward) and rightward (lateral)

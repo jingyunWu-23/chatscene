@@ -32,7 +32,9 @@ ego = Car at egoSpawnPt,
     with blueprint EGO_MODEL
 # Identifying the adjacent lane for the Adversarial Agent and setting its spawn point further in front
 param OPT_GEO_Y_DISTANCE = Range(0, 30)
-advLane = network.laneSectionAt(ego)._laneToRight.lane
+advLaneSec = network.laneSectionAt(ego)._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]

@@ -48,7 +48,9 @@ Blocker = Car at IntSpawnPt,
 
 # Setup for the motorcyclist starting in the oncoming lane (opposite direction), then swerving into ego's bypass lane
 # First, locate the oncoming lane (typically _laneToLeft for right-hand traffic, assuming ego is in rightmost drivable lane)
-oncomingLane = laneSec._laneToLeft.lane
+oncomingLaneSec = laneSec._laneToLeft
+require oncomingLaneSec is not None
+oncomingLane = oncomingLaneSec.lane
 # Spawn point in oncoming lane, ahead of blocker (so motorcyclist approaches blocker then swerves)
 oncomingSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
 projectedOncomingPos = Vector(*oncomingLane.centerline.project(oncomingSpawnPt.position).coords[0])

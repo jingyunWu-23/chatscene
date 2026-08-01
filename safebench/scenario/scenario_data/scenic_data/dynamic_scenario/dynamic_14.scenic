@@ -55,7 +55,9 @@ param OPT_MANEUVER_SPEED = Range(3, 8)          # Speed during lane-crossing man
 # and per instruction to match existing style, we choose _laneToRight as in first snippet.
 
 laneSec = network.laneSectionAt(ego)
-advLane = laneSec._laneToRight.lane
+advLaneSec = laneSec._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 
 # Spawn point aligned longitudinally with ego, then shifted laterally into target lane
 BaseSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_LONGITUDINAL_DISTANCE

@@ -43,7 +43,9 @@ param OPT_MERGE_DISTANCE = Range(-5, 5)  # Longitudinal offset during merge (to 
 
 # Identify the target lane (e.g., _laneToRight for right merge; _laneToLeft for left merge — assumed configurable via context)
 # Since direction is not specified as left/right in description, we use generic lateral offset approach
-advLane = network.laneSectionAt(ego)._laneToRight.lane  # Default to right lane; adjust per scenario variant if needed
+advLaneSec = network.laneSectionAt(ego)._laneToRight  # Default to right lane; adjust per scenario variant if needed
+require advLaneSec is not None
+advLane = advLaneSec.lane
 
 # Spawn point in target lane, ahead of ego
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

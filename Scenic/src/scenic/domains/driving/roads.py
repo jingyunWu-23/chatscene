@@ -522,6 +522,22 @@ class Lane(_ContainsCenterline, LinearElement):
 
     maneuvers: Tuple[Maneuver] = ()     # possible maneuvers upon reaching the end of this lane
 
+    @property
+    def _laneToLeft(self) -> Union[LaneSection, None]:
+        """Compatibility shim for generated Scenic snippets mixing lanes/sections."""
+        for section in self.sections:
+            if section._laneToLeft is not None:
+                return section._laneToLeft
+        return None
+
+    @property
+    def _laneToRight(self) -> Union[LaneSection, None]:
+        """Compatibility shim for generated Scenic snippets mixing lanes/sections."""
+        for section in self.sections:
+            if section._laneToRight is not None:
+                return section._laneToRight
+        return None
+
     @distributionFunction
     def sectionAt(self, point: Vectorlike, reject=False) -> Union[LaneSection, None]:
         """Get the LaneSection passing through a given point."""

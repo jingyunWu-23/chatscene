@@ -33,7 +33,9 @@ param OPT_GEO_Y_DISTANCE = Range(-5, 5)    # Longitudinal offset relative to int
 # In Scenic 2.1, we use `network.intersectionAt` or project onto road geometry; since exact intersection API may vary,
 # we approximate using the ego's current lane section and its lateral left extension near the upcoming junction.
 laneSec = network.laneSectionAt(ego)
-leftLane = laneSec._laneToLeft.lane
+leftLaneSec = laneSec._laneToLeft
+require leftLaneSec is not None
+leftLane = leftLaneSec.lane
 
 # Compute a point just before the intersection: use egoSpawnPt offset laterally left and slightly forward/backward
 # We interpret "just before the intersection boundary" as a point on the left-lane centerline aligned with ego's longitudinal position,

@@ -37,7 +37,9 @@ ego = Car at egoSpawnPt,
     with blueprint EGO_MODEL
 # Identifying the adjacent lane to the right for the Adversarial Agent and setting its spawn point laterally aligned with ego
 param OPT_LATERAL_OFFSET = Range(0, 5)
-advLane = network.laneSectionAt(ego)._laneToRight.lane
+advLaneSec = network.laneSectionAt(ego)._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for 0
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]

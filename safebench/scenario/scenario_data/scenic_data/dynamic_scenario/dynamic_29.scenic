@@ -47,7 +47,9 @@ param OPT_GEO_Y_DISTANCE = Range(10, 50)  # Distance ahead of ego across the int
 # (i.e., ego's `_laneToLeft`), but positioned *across the intersection*, meaning aligned
 # with ego's forward direction beyond the intersection point.
 laneSec = network.laneSectionAt(ego)
-oncomingLane = laneSec._laneToLeft.lane
+oncomingLaneSec = laneSec._laneToLeft
+require oncomingLaneSec is not None
+oncomingLane = oncomingLaneSec.lane
 
 # Compute a spawn point ahead along ego's forward direction, then project onto oncoming lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

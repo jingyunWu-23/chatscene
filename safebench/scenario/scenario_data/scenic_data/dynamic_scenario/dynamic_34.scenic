@@ -41,7 +41,9 @@ param OPT_GEO_Y_DISTANCE = Range(0, 30)  # Distance along road direction (negati
 param OPT_GEO_X_DISTANCE = Range(1, 5)   # Lateral offset to the right
 
 # Identifying the adjacent right lane for the Adversarial Agent
-advLane = network.laneSectionAt(ego)._laneToRight.lane
+advLaneSec = network.laneSectionAt(ego)._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for -globalParameters.OPT_GEO_Y_DISTANCE
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]

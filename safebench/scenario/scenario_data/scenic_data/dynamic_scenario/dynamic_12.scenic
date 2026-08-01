@@ -51,7 +51,9 @@ LeadingAgent = Car at LeadingSpawnPt,
 # However, Scenic 2.1 requires deterministic lane selection per snippet — so we must pick one.
 # Given symmetry and prior examples using both, and no directional cue in description, we choose _laneToRight
 # (consistent with first example, and most common merge scenario unless stated otherwise).
-advLane = network.laneSectionAt(ego)._laneToRight.lane
+advLaneSec = network.laneSectionAt(ego)._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 
 # Spawn point for adversarial agent in target lane, ahead of ego (but not necessarily aligned with LeadingSpawnPt)
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

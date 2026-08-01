@@ -40,10 +40,14 @@ param OPT_GEO_X_DISTANCE = Range(5, 15)   # Lateral offset into the right adjace
 
 # Identify the rightmost adjacent lane(s) — traverse _laneToRight chain until no more right lane exists
 laneSec = network.laneSectionAt(ego)
-rightLane = laneSec._laneToRight.lane
+rightLaneSec = laneSec._laneToRight
+require rightLaneSec is not None
+rightLane = rightLaneSec.lane
 # If multiple right lanes exist and we want the *rightmost*, follow chain:
 while rightLane and rightLane._laneToRight:
-    rightLane = rightLane._laneToRight.lane
+    rightLaneSec = rightLane._laneToRight
+    require rightLaneSec is not None
+    rightLane = rightLaneSec.lane
 
 # Define a reference point ahead of ego in ego's lane to project from
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

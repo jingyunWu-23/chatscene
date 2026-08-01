@@ -45,7 +45,9 @@ Blocker = Car at IntSpawnPt,
 
 # Setup for the adversarial agent who approaches head-on in the near opposite (oncoming) lane
 # The agent spawns in the oncoming lane (i.e., _laneToLeft of ego's current lane section), aligned ahead of the blocker
-advLane = laneSec._laneToLeft.lane
+advLaneSec = laneSec._laneToLeft
+require advLaneSec is not None
+advLane = advLaneSec.lane
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]
 

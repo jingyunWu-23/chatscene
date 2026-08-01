@@ -30,7 +30,9 @@ LeadingAgent = Car at LeadingSpawnPt,
 # Identifying the adjacent right lane (e.g., side street/driveway/curb lane) for the Adversarial Agent
 # and setting its spawn point ahead on that lane
 param OPT_GEO_Y_DISTANCE = Range(0, 30)
-advLane = network.laneSectionAt(ego)._laneToRight.lane
+advLaneSec = network.laneSectionAt(ego)._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]

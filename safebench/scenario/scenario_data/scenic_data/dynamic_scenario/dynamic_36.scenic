@@ -34,7 +34,9 @@ param OPT_GEO_Y_DISTANCE = Range(-10, 10)
 param OPT_ADV_SPEED = Range(0, 3)
 
 # Get the right-adjacent lane of the ego's current lane section (approach lane to intersection)
-advLane = network.laneSectionAt(ego)._laneToRight.lane
+advLaneSec = network.laneSectionAt(ego)._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 # Use a point near the start of the lane (approach side) to position near intersection
 IntSpawnPt = advLane.centerline.start
 # Offset laterally outward (perpendicular to lane heading) to place agent adjacent but not on centerline

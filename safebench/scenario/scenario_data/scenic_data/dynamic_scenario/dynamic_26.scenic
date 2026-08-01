@@ -44,7 +44,9 @@ param OPT_GEO_Y_DISTANCE = Range(10, 50)  # Distance ahead along road direction 
 
 # Identify the oncoming lane (assumed to be _laneToLeft in a two-lane undivided road; consistent with prior examples)
 laneSec = network.laneSectionAt(ego)
-advLane = laneSec._laneToLeft.lane
+advLaneSec = laneSec._laneToLeft
+require advLaneSec is not None
+advLane = advLaneSec.lane
 
 # Compute spawn point ahead along ego's road direction, then project onto oncoming lane centerline
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

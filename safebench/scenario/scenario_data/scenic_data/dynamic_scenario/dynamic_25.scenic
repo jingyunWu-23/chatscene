@@ -44,7 +44,9 @@ param OPT_GEO_Y_DISTANCE = Range(10, 40)     # Distance ahead along the oncoming
 
 # Identify the oncoming lane: assume ego is on a two-way road; _laneToLeft is the opposing-direction lane
 laneSec = network.laneSectionAt(ego)
-oncomingLane = laneSec._laneToLeft.lane
+oncomingLaneSec = laneSec._laneToLeft
+require oncomingLaneSec is not None
+oncomingLane = oncomingLaneSec.lane
 
 # Compute spawn point in the oncoming lane, directly opposite and ahead along its centerline
 # First, get a point directly opposite ego across the intersection — we use egoSpawnPt projected onto oncomingLane's centerline
