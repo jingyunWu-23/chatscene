@@ -28,6 +28,8 @@ for lane in network.lanes:
             laneSecsWithTwoAdjacent.append(laneSec)
 
 # Selecting a random lane section from identified sections for the ego vehicle
+if len(laneSecsWithTwoAdjacent) == 0:
+    laneSecsWithTwoAdjacent = network.laneSections
 egoLaneSec = Uniform(*laneSecsWithTwoAdjacent)
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 

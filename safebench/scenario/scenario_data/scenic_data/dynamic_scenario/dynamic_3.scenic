@@ -25,6 +25,8 @@ for lane in network.lanes:
         if laneSec.centerline.isStraight:
             straightLaneSections.append(laneSec)
 
+if len(straightLaneSections) == 0:
+    straightLaneSections = network.laneSections
 egoLaneSec = Uniform(*straightLaneSections)
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 

@@ -35,6 +35,8 @@ egoInitLane = network.laneAt(lanePts[0])
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.STRAIGHT, egoInitLane.maneuvers))
 advManeuvers = filter(lambda i: i.type == ManeuverType.STRAIGHT, egoManeuver.conflictingManeuvers)
 if len(advManeuvers.sample()):
+    if len(advManeuvers) == 0:
+        advManeuvers = network.laneSections
     advManeuver = Uniform(*advManeuvers)
 else:
     # route 6 has some problems

@@ -35,6 +35,8 @@ param OPT_SLOW_SPEED = Range(0, 2)
 egoInitLane = network.laneAt(lanePts[0])
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.LEFT_TURN, egoInitLane.maneuvers))
 advManeuvers = filter(lambda i: i.type == ManeuverType.STRAIGHT, egoManeuver.conflictingManeuvers)
+if len(advManeuvers) == 0:
+    advManeuvers = network.laneSections
 advManeuver = Uniform(*advManeuvers)
 advTrajectory = [advManeuver.startLane, advManeuver.connectingLane, advManeuver.endLane]
 

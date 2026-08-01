@@ -41,6 +41,8 @@ ego = Car at egoSpawnPt,
 require 10 <= (distance to intersection) <= 40
 # Defining adversarial maneuvers as those conflicting with the ego's straight path
 advManeuvers = filter(lambda i: i.type == ManeuverType.STRAIGHT, egoManeuver.conflictingManeuvers)
+if len(advManeuvers) == 0:
+    advManeuvers = network.laneSections
 advManeuver = Uniform(*advManeuvers)
 advTrajectory = [advManeuver.startLane, advManeuver.connectingLane, advManeuver.endLane]
 advSpawnPt = advManeuver.connectingLane.centerline[0]  # Initial point on the connecting lane's centerline

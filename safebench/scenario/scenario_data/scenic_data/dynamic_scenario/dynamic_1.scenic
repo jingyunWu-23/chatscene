@@ -21,6 +21,8 @@ for lane in network.lanes:
         if laneSec.curvature < 0.001:  # Approximate straightness
             straightLaneSections.append(laneSec)
 
+if len(straightLaneSections) == 0:
+    straightLaneSections = network.laneSections
 egoLaneSec = Uniform(*straightLaneSections)
 egoSpawnPt = OrientedPoint in egoLaneSec.centerline
 

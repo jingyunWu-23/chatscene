@@ -35,6 +35,8 @@ param OPT_STEER = Range(0.5, 1.0)
 egoInitLane = network.laneAt(lanePts[0])
 egoManeuver = Uniform(*filter(lambda m: m.type is ManeuverType.LEFT_TURN, egoInitLane.maneuvers))
 advManeuvers = filter(lambda i: i.type == ManeuverType.STRAIGHT, egoManeuver.conflictingManeuvers)
+if len(advManeuvers) == 0:
+    advManeuvers = network.laneSections
 advManeuver = Uniform(*advManeuvers)
 advTrajectory = [advManeuver.startLane, advManeuver.connectingLane, advManeuver.endLane]
 

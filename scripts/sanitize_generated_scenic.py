@@ -45,6 +45,10 @@ ORIENTATION_ACCESS_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"(?P<obj>[A-Za-z_][A-Za-z0-9_]*)\.orientation\["
 )
+UNIFORM_LIST_ASSIGN_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
+    r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
+)
 
 
 def opposite_side(side: str) -> str:
@@ -72,6 +76,33 @@ def sanitize_text(text: str) -> str:
     i = 0
     while i < len(lines):
         line = lines[i]
+        uniform_list_match = UNIFORM_LIST_ASSIGN_RE.match(line)
+        if uniform_list_match:
+            indent = uniform_list_match.group("indent")
+            source = uniform_list_match.group("source")
+            while output and (
+                output[-1].startswith(f"{indent}    ")
+                or output[-1].strip() in {
+                    f"if len({source}) == 0:",
+                    f"{source} = network.laneSections",
+                }
+            ):
+                output.pop()
+            output.append(f"{indent}if len({source}) == 0:")
+            output.append(f"{indent}    {source} = network.laneSections")
+            output.append(line)
+            changed = True
+            i += 1
+            while i < len(lines):
+                stripped = lines[i].strip()
+                if stripped == f"if len({source}) == 0:":
+                    i += 1
+                    while i < len(lines) and lines[i].startswith(f"{indent}    "):
+                        i += 1
+                    continue
+                break
+            continue
+
         lane_section_at_ego = LANE_SECTION_AT_EGO_RE.match(line)
         if lane_section_at_ego and has_ego_lane_sec:
             indent = lane_section_at_ego.group("indent")
