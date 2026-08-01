@@ -72,7 +72,11 @@ def sanitize_generated_scenic(files):
     from scripts.sanitize_generated_scenic import sanitize_file
 
     changed = []
-    for scenic_file in files:
+    roots = {scenic_file.parent for scenic_file in files}
+    recursive_files = []
+    for root in roots:
+        recursive_files.extend(sorted(root.rglob("*.scenic")))
+    for scenic_file in sorted(set(files) | set(recursive_files)):
         if sanitize_file(scenic_file):
             changed.append(scenic_file)
     return changed

@@ -33,7 +33,9 @@ LeadingAgent = Car following roadDirection from NewSpawnPt for globalParameters.
     with behavior FollowLaneBehavior(target_speed=globalParameters.OPT_LEADING_SPEED)
 
 laneSec = network.laneSectionAt(NewSpawnPt)
-advLane = laneSec._laneToRight.lane
+advLaneSec = laneSec._laneToRight
+require advLaneSec is not None
+advLane = advLaneSec.lane
 IntSpawnPt = OrientedPoint following roadDirection from NewSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]

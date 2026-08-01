@@ -87,7 +87,7 @@ advHeading = advLane.orientation[projectPt]
 # Start from advLane and walk right until no more right lane — collect all.
 rightmostLanes = [advLane]
 cur = advLane
-while cur._laneToRight is not None and cur._laneToRight.lane is not None:
+while cur._laneToRight is not None:
     curSec = cur._laneToRight
     require curSec is not None
     cur = curSec.lane

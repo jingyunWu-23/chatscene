@@ -63,11 +63,12 @@ def sanitize_file(path: Path) -> bool:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scenic-dir", default=str(DEFAULT_SCENIC_DIR))
+    parser.add_argument("--recursive", action="store_true", help="Patch .scenic files below scenic-dir recursively.")
     parser.add_argument("--check", action="store_true", help="Report files which would change without writing.")
     args = parser.parse_args()
 
     scenic_dir = Path(args.scenic_dir).expanduser().resolve()
-    files = sorted(scenic_dir.glob("*.scenic"))
+    files = sorted(scenic_dir.rglob("*.scenic") if args.recursive else scenic_dir.glob("*.scenic"))
     changed = []
     for path in files:
         text = path.read_text(encoding="utf-8")
