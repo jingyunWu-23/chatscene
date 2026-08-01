@@ -39,7 +39,9 @@ LeadingAgent = Car at LeadingSpawnPt,
 egoLaneSection = network.laneSectionAt(ego)
 # In CARLA/Scenic 2.1, `_oppositeLane` is the standard attribute for the directly opposing lane (same road, opposite direction)
 # If not available, fallback to using the lane with opposite heading — but per Scenic 2.1 CARLA schema, `_oppositeLane` exists
-advLane = egoLaneSection._oppositeLane.lane
+advLaneSec = egoLaneSection._oppositeLane
+require advLaneSec is not None
+advLane = advLaneSec.lane
 
 # Get a point near the intersection centerline: project a point just before the lane's end (approaching intersection)
 # Use the start of the opposite lane's centerline segment that aligns with ego's approach

@@ -19,7 +19,7 @@ DEFAULT_SCENIC_DIR = (
 
 LANE_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
-    r"(?P<base>.+?)(?P<side>\._laneTo(?:Left|Right))\.lane(?P<tail>\s*(?:#.*)?)$"
+    r"(?P<base>.+?)(?P<side>\._[A-Za-z0-9]*Lane)\.lane(?P<tail>\s*(?:#.*)?)$"
 )
 
 

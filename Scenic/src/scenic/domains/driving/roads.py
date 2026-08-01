@@ -676,6 +676,15 @@ class LaneSection(_ContainsCenterline, LinearElement):
         return angle / length
 
     @property
+    def _oppositeLane(self) -> Union[LaneSection, None]:
+        """Compatibility shim for generated snippets expecting an opposite lane."""
+        for lane in getattr(getattr(self, 'road', None), 'lanes', ()):
+            for section in getattr(lane, 'sections', ()):
+                if section is not self and section.isForward != self.isForward:
+                    return section
+        return None
+
+    @property
     def laneToLeft(self) -> LaneSection:
         """The adjacent lane of the same type to the left; rejects if there is none."""
         return _rejectIfNonexistent(self._laneToLeft, 'lane to left')

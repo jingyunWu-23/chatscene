@@ -124,6 +124,11 @@ class ScenicSimulator:
         if self.args.verbosity >= 1:
             print('Beginning scenario construction...')
         startTime = time.time()
+        try:
+            from scripts.sanitize_generated_scenic import sanitize_file
+            sanitize_file(self.args.scenicFile)
+        except Exception:
+            pass
         self.scenario = errors.callBeginningScenicTrace(
             lambda: translator.scenarioFromFile(self.args.scenicFile,
                                                 params=params,

@@ -210,6 +210,10 @@ def dynamic_scenic_parse(config, logger):
     """
     mode = config['mode']
     scenic_dir = config['scenic_dir']
+    try:
+        from scripts.sanitize_generated_scenic import sanitize_file
+    except Exception:
+        sanitize_file = None
 
     scenic_rel_listdir = []
     scenic_abs_listdir = []
@@ -217,6 +221,9 @@ def dynamic_scenic_parse(config, logger):
     new_files = sorted([path for path in os.listdir(scenic_dir) if path.split('.')[1] == 'scenic'])
     scenic_rel_listdir = new_files
     scenic_abs_listdir = [osp.join(scenic_dir, path) for path in new_files]
+    if sanitize_file is not None:
+        for scenic_file in scenic_abs_listdir:
+            sanitize_file(scenic_file)
 
     behaviors = [path.split('.')[0] for path in scenic_rel_listdir]
     assert len(scenic_rel_listdir) > 0, 'no scenic file in this dir'
