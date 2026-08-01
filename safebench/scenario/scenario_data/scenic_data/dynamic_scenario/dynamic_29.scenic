@@ -53,7 +53,7 @@ if oncomingLaneSec is None:
 if oncomingLaneSec is None:
     oncomingLaneSec = laneSec
 require oncomingLaneSec is not None
-oncomingLane = oncomingLaneSec.lane
+oncomingLane = oncomingLaneSec
 
 # Compute a spawn point ahead along ego's forward direction, then project onto oncoming lane
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

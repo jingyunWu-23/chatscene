@@ -49,7 +49,7 @@ if advLaneSec is None:
 if advLaneSec is None:
     advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
-advLane = advLaneSec.lane
+advLane = advLaneSec
 
 # Spawn point in target lane, ahead of ego
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

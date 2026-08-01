@@ -36,7 +36,7 @@ if advLaneSec is None:
 if advLaneSec is None:
     advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
-advLane = advLaneSec.lane
+advLane = advLaneSec
 # Spawn point offset along advLane’s centerline, starting from where it aligns with ego’s position laterally
 IntSpawnPt = OrientedPoint following advLane.heading from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])

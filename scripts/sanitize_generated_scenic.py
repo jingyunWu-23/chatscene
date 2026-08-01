@@ -25,6 +25,14 @@ SPLIT_LANE_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<section>[A-Za-z_][A-Za-z0-9_]*Sec)\s*=\s*"
     r"(?P<base>.+?)(?P<side>\._laneTo(?:Left|Right))(?P<tail>\s*(?:#.*)?)$"
 )
+SECTION_LANE_ASSIGN_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
+    r"(?P<section>[A-Za-z_][A-Za-z0-9_]*(?:Sec|Section))\.lane(?P<tail>\s*(?:#.*)?)$"
+)
+REGION_SECTION_LANE_RE = re.compile(
+    r"^(?P<indent>\s*)with regionContainedIn "
+    r"(?P<section>[A-Za-z_][A-Za-z0-9_]*(?:Sec|Section))\.lane(?P<tail>\s*,?\s*(?:#.*)?)$"
+)
 
 
 def opposite_side(side: str) -> str:
@@ -48,6 +56,16 @@ def sanitize_text(text: str) -> str:
     i = 0
     while i < len(lines):
         line = lines[i]
+        region_match = REGION_SECTION_LANE_RE.match(line)
+        if region_match:
+            output.append(
+                f"{region_match.group('indent')}with regionContainedIn "
+                f"{region_match.group('section')}{region_match.group('tail')}"
+            )
+            changed = True
+            i += 1
+            continue
+
         split_match = SPLIT_LANE_ASSIGN_RE.match(line)
         if split_match:
             indent = split_match.group("indent")
@@ -71,6 +89,16 @@ def sanitize_text(text: str) -> str:
                 break
             continue
 
+        section_lane_match = SECTION_LANE_ASSIGN_RE.match(line)
+        if section_lane_match:
+            output.append(
+                f"{section_lane_match.group('indent')}{section_lane_match.group('target')} = "
+                f"{section_lane_match.group('section')}{section_lane_match.group('tail')}"
+            )
+            changed = True
+            i += 1
+            continue
+
         if output and output[-1].lstrip().startswith("require "):
             required_var = output[-1].strip().split()[1]
             if line.strip() == f"require {required_var} is not None":
@@ -92,7 +120,7 @@ def sanitize_text(text: str) -> str:
         section_var = f"{target}Sec"
 
         append_lane_section_assignment(output, indent, section_var, base, side, tail)
-        output.append(f"{indent}{target} = {section_var}.lane")
+        output.append(f"{indent}{target} = {section_var}")
         changed = True
         i += 1
 

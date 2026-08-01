@@ -50,7 +50,7 @@ if oncomingLaneSec is None:
 if oncomingLaneSec is None:
     oncomingLaneSec = laneSec
 require oncomingLaneSec is not None
-oncomingLane = oncomingLaneSec.lane
+oncomingLane = oncomingLaneSec
 
 # Compute spawn point in the oncoming lane, directly opposite and ahead along its centerline
 # First, get a point directly opposite ego across the intersection — we use egoSpawnPt projected onto oncomingLane's centerline

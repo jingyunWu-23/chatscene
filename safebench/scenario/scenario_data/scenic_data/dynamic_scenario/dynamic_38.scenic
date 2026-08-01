@@ -41,7 +41,7 @@ egoLaneSection = network.laneSectionAt(ego)
 # If not available, fallback to using the lane with opposite heading — but per Scenic 2.1 CARLA schema, `_oppositeLane` exists
 advLaneSec = egoLaneSection._oppositeLane
 require advLaneSec is not None
-advLane = advLaneSec.lane
+advLane = advLaneSec
 
 # Get a point near the intersection centerline: project a point just before the lane's end (approaching intersection)
 # Use the start of the opposite lane's centerline segment that aligns with ego's approach

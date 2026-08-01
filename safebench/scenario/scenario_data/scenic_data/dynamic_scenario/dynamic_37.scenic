@@ -46,7 +46,7 @@ if rightLaneSec is None:
 if rightLaneSec is None:
     rightLaneSec = laneSec
 require rightLaneSec is not None
-rightLane = rightLaneSec.lane
+rightLane = rightLaneSec
 # If multiple right lanes exist and we want the *rightmost*, follow chain:
 while rightLane and rightLane._laneToRight:
     rightLaneSec = rightLane._laneToRight
@@ -55,7 +55,7 @@ while rightLane and rightLane._laneToRight:
     if rightLaneSec is None:
         rightLaneSec = rightLane
     require rightLaneSec is not None
-    rightLane = rightLaneSec.lane
+    rightLane = rightLaneSec
 
 # Define a reference point ahead of ego in ego's lane to project from
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE

@@ -39,7 +39,7 @@ if leftLaneSec is None:
 if leftLaneSec is None:
     leftLaneSec = laneSec
 require leftLaneSec is not None
-leftLane = leftLaneSec.lane
+leftLane = leftLaneSec
 
 # Compute a point just before the intersection: use egoSpawnPt offset laterally left and slightly forward/backward
 # We interpret "just before the intersection boundary" as a point on the left-lane centerline aligned with ego's longitudinal position,

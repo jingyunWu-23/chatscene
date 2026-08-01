@@ -58,5 +58,5 @@ IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalPar
 # Spawn adversarial agent in the *same* lane ego is in (i.e., regionContainedIn laneSec.lane), facing opposite direction
 AdvAgent = Pedestrian at IntSpawnPt,
     with heading IntSpawnPt.heading + 180 deg,
-    with regionContainedIn laneSec.lane,
+    with regionContainedIn laneSec,
     with behavior AdvBehavior()

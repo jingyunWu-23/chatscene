@@ -51,7 +51,7 @@ if advLaneSec is None:
 if advLaneSec is None:
     advLaneSec = laneSec
 require advLaneSec is not None
-advLane = advLaneSec.lane
+advLane = advLaneSec
 projectPt = Vector(*advLane.centerline.project(IntSpawnPt.position).coords[0])
 advHeading = advLane.orientation[projectPt]
 

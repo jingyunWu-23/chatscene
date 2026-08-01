@@ -32,7 +32,7 @@ if advLaneSec is None:
 if advLaneSec is None:
     advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
-advLane = advLaneSec.lane
+advLane = advLaneSec
 
 # Compute a spawn point ahead and to the right relative to ego's pre-turn orientation,
 # i.e., offset from egoSpawnPt along ego's heading (forward) and rightward (lateral)

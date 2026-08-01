@@ -61,7 +61,7 @@ if advLaneSec is None:
 if advLaneSec is None:
     advLaneSec = laneSec
 require advLaneSec is not None
-advLane = advLaneSec.lane
+advLane = advLaneSec
 
 # Spawn point aligned longitudinally with ego, then shifted laterally into target lane
 BaseSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_LONGITUDINAL_DISTANCE

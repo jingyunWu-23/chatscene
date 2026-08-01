@@ -40,7 +40,7 @@ if advLaneSec is None:
 if advLaneSec is None:
     advLaneSec = network.laneSectionAt(ego)
 require advLaneSec is not None
-advLane = advLaneSec.lane
+advLane = advLaneSec
 # Use a point near the start of the lane (approach side) to position near intersection
 IntSpawnPt = advLane.centerline.start
 # Offset laterally outward (perpendicular to lane heading) to place agent adjacent but not on centerline

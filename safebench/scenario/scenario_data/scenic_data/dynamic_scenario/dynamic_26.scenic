@@ -50,7 +50,7 @@ if advLaneSec is None:
 if advLaneSec is None:
     advLaneSec = laneSec
 require advLaneSec is not None
-advLane = advLaneSec.lane
+advLane = advLaneSec
 
 # Compute spawn point ahead along ego's road direction, then project onto oncoming lane centerline
 IntSpawnPt = OrientedPoint following roadDirection from egoSpawnPt for globalParameters.OPT_GEO_Y_DISTANCE
