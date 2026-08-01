@@ -77,7 +77,4 @@ advHeading = advLane.orientation[projectPt]
 AdvAgent = Car at projectPt,
     with heading advHeading,
     with regionContainedIn None,
-    with behavior AdvBehavior(
-        initial_speed=globalParameters.OPT_ADV_SPEED_HIGH,
-        final_speed=globalParameters.OPT_ADV_SPEED_LOW
-    )
+    with behavior AdvBehavior()

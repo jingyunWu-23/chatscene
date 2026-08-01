@@ -11,6 +11,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_SCENIC_DIR = ROOT_DIR / "safebench" / "scenario" / "scenario_data" / "scenic_data" / "dynamic_scenario"
@@ -126,13 +128,16 @@ def relative_to_root(path: Path) -> str:
         return str(path.resolve())
 
 
+def load_yaml_config(path: Path):
+    with path.open("r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
 def main():
     args = parse_args()
     if not args.render:
         os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     add_carla_egg(args.carla_python_egg)
-
-    from safebench.util.run_util import load_config
 
     scenic_dir = Path(args.scenic_dir).expanduser().resolve()
     files = scenic_files(scenic_dir)
@@ -157,8 +162,8 @@ def main():
         except ModuleNotFoundError:
             device = "cpu"
             torch = None
-    agent_config = load_config(str(ROOT_DIR / "safebench" / "agent" / "config" / args.agent_cfg))
-    scenario_config = load_config(str(ROOT_DIR / "safebench" / "scenario" / "config" / args.scenario_cfg))
+    agent_config = load_yaml_config(ROOT_DIR / "safebench" / "agent" / "config" / args.agent_cfg)
+    scenario_config = load_yaml_config(ROOT_DIR / "safebench" / "scenario" / "config" / args.scenario_cfg)
 
     model_path = ROOT_DIR / "safebench" / "agent" / "model_ckpt" / "ego_train" / args.run_name
     output_dir = ROOT_DIR / "log" / "ego_train" / args.run_name

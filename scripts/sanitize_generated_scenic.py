@@ -51,6 +51,18 @@ UNIFORM_LIST_ASSIGN_RE = re.compile(
 )
 PARAM_DEF_RE = re.compile(r"^\s*param\s+(OPT_[A-Za-z0-9_]+)\s*=")
 OPT_REF_RE = re.compile(r"globalParameters\.(OPT_[A-Za-z0-9_]+)")
+BEHAVIOR_DEF_RE = re.compile(
+    r"^\s*behavior\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\((?P<params>[^)]*)\):"
+)
+BEHAVIOR_CALL_SINGLE_RE = re.compile(
+    r"^(?P<indent>\s*)with behavior (?P<name>[A-Za-z_][A-Za-z0-9_]*)\((?P<args>.*)\)(?P<tail>\s*,?\s*(?:#.*)?)$"
+)
+BEHAVIOR_CALL_START_RE = re.compile(
+    r"^(?P<indent>\s*)with behavior (?P<name>[A-Za-z_][A-Za-z0-9_]*)\(\s*$"
+)
+KWARG_LINE_RE = re.compile(
+    r"^(?P<indent>\s*)(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?P<value>.*?)(?P<comma>,?)\s*(?P<comment>#.*)?$"
+)
 
 
 def opposite_side(side: str) -> str:
@@ -87,6 +99,73 @@ def missing_opt_params(lines):
     return sorted(refs - defs)
 
 
+def behavior_signatures(lines):
+    signatures = {}
+    for line in lines:
+        match = BEHAVIOR_DEF_RE.match(line)
+        if not match:
+            continue
+        params = []
+        for param in match.group("params").split(","):
+            name = param.strip().split("=", 1)[0].strip()
+            if name:
+                params.append(name)
+        signatures[match.group("name")] = set(params)
+    return signatures
+
+
+def split_top_level_args(args: str):
+    parts = []
+    current = []
+    depth = 0
+    for char in args:
+        if char in "([{":
+            depth += 1
+        elif char in ")]}" and depth:
+            depth -= 1
+        if char == "," and depth == 0:
+            parts.append("".join(current).strip())
+            current = []
+            continue
+        current.append(char)
+    tail = "".join(current).strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+
+def filter_behavior_args(args: str, allowed_params):
+    if not args.strip():
+        return args, False
+    kept = []
+    changed = False
+    for part in split_top_level_args(args):
+        if "=" not in part:
+            kept.append(part)
+            continue
+        name = part.split("=", 1)[0].strip()
+        if name in allowed_params:
+            kept.append(part)
+        else:
+            changed = True
+    return ", ".join(kept), changed
+
+
+def filter_behavior_kwarg_lines(arg_lines, allowed_params):
+    kept = []
+    changed = False
+    for line in arg_lines:
+        match = KWARG_LINE_RE.match(line)
+        if not match:
+            kept.append(line)
+            continue
+        if match.group("name") in allowed_params:
+            kept.append(line)
+        else:
+            changed = True
+    return kept, changed
+
+
 def append_lane_section_assignment(output, indent, section_var, base, side, tail, has_ego_lane_sec):
     output.append(f"{indent}{section_var} = {base}{side}{tail}")
     if side in ("._laneToLeft", "._laneToRight"):
@@ -105,6 +184,7 @@ def sanitize_text(text: str) -> str:
     output = []
     changed = False
     has_ego_lane_sec = any(re.match(r"^\s*egoLaneSec\s*=", line) for line in lines)
+    local_behaviors = behavior_signatures(lines)
     missing_params = missing_opt_params(lines)
     inserted_missing_params = False
     i = 0
@@ -118,6 +198,42 @@ def sanitize_text(text: str) -> str:
             changed = True
             i += 1
             continue
+
+        behavior_single = BEHAVIOR_CALL_SINGLE_RE.match(line)
+        if behavior_single and behavior_single.group("name") in local_behaviors:
+            allowed_params = local_behaviors[behavior_single.group("name")]
+            filtered_args, args_changed = filter_behavior_args(behavior_single.group("args"), allowed_params)
+            if args_changed:
+                output.append(
+                    f"{behavior_single.group('indent')}with behavior "
+                    f"{behavior_single.group('name')}({filtered_args}){behavior_single.group('tail')}"
+                )
+                changed = True
+                i += 1
+                continue
+
+        behavior_start = BEHAVIOR_CALL_START_RE.match(line)
+        if behavior_start and behavior_start.group("name") in local_behaviors:
+            arg_lines = []
+            j = i + 1
+            while j < len(lines) and lines[j].strip() != ")":
+                arg_lines.append(lines[j])
+                j += 1
+            if j < len(lines):
+                allowed_params = local_behaviors[behavior_start.group("name")]
+                filtered_lines, args_changed = filter_behavior_kwarg_lines(arg_lines, allowed_params)
+                if args_changed:
+                    if filtered_lines:
+                        output.append(line)
+                        output.extend(filtered_lines)
+                        output.append(lines[j])
+                    else:
+                        output.append(
+                            f"{behavior_start.group('indent')}with behavior {behavior_start.group('name')}()"
+                        )
+                    changed = True
+                    i = j + 1
+                    continue
 
         uniform_list_match = UNIFORM_LIST_ASSIGN_RE.match(line)
         if uniform_list_match:
@@ -292,7 +408,7 @@ def sanitize_text(text: str) -> str:
     if missing_params and not inserted_missing_params:
         prefix = [f"param {name} = {default_param_value(name)}" for name in missing_params]
         result = "\n".join(prefix + [result])
-    if text.endswith("\n"):
+    if not result.endswith("\n"):
         result += "\n"
     return result if changed or (missing_params and not inserted_missing_params) else text
 

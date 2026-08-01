@@ -45,4 +45,3 @@ AdvAgent = Car following roadDirection from IntSpawnPt for globalParameters.OPT_
     with behavior AdvBehavior()
     
 require 20 deg <= RelativeHeading(AdvAgent) <= 160 deg
-

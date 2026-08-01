@@ -101,4 +101,4 @@ finalHeading = advLane.orientation[finalPt]
 AdvAgent = Car at finalPt,
     with heading finalHeading,
     with regionContainedIn None,
-    with behavior AdvBehavior(target_speed=globalParameters.OPT_MANEUVER_SPEED)
+    with behavior AdvBehavior()
