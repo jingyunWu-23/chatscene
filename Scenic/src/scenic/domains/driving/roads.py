@@ -1183,6 +1183,15 @@ class Network:
         return self.findPointIn(point, self.allRoads, reject)
 
     @distributionMethod
+    def roadsAt(self, point: Vectorlike) -> List[Road]:
+        """Get all roads passing through a given point.
+
+        Compatibility helper for generated Scenic snippets which use ``roadsAt`` even
+        though Scenic normally exposes the singular ``roadAt`` API.
+        """
+        return self._findPointInAll(point, self.allRoads)
+
+    @distributionMethod
     def laneAt(self, point: Vectorlike, reject=False) -> Union[Lane, None]:
         """Get the `Lane` passing through a given point."""
         return self.findPointIn(point, self.lanes, reject)

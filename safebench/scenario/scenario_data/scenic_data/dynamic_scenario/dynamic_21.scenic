@@ -50,7 +50,6 @@ egoLaneSection = network.laneSectionAt(ego)
 # In Scenic 2.1, `_laneToLeft` gives adjacent lane *in same road*; for intersection legs, we need connected road.
 # Instead, use `network.roadsAt` to find roads intersecting at ego's location, then select the one oriented ~leftward relative to ego's heading.
 egoPos = egoSpawnPt.position
-intersectingRoads = network.roadsAt(egoPos)
 # Find road whose heading is approximately ego's heading - 90 deg (i.e., coming from left, traveling toward ego's path)
 # We assume the left-leg cross street is the one whose centerline near ego has orientation ≈ egoSpawnPt.heading - 90 deg
 # Since Scenic 2.1 doesn't support direct angle filtering in expressions, we rely on topology: use the road connected via left junction

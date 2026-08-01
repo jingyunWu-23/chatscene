@@ -66,6 +66,9 @@ OBJECT_WITH_POSITION_RE = re.compile(
     r"(?:at|on|in|left of|right of|front of|back of|following)\b.*,\s*(?:#.*)?$"
 )
 WITH_POSITION_RE = re.compile(r"^\s*with position\b")
+NETWORK_ROADS_AT_ASSIGN_RE = re.compile(
+    r"^\s*(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*network\.roadsAt\(.+\)\s*(?:#.*)?$"
+)
 UNIFORM_LIST_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
@@ -278,6 +281,15 @@ def sanitize_text(text: str) -> str:
             changed = True
             i += 1
             continue
+
+        roads_at_match = NETWORK_ROADS_AT_ASSIGN_RE.match(line)
+        if roads_at_match:
+            target = roads_at_match.group("target")
+            later_text = "\n".join(lines[i + 1:])
+            if not re.search(rf"\b{re.escape(target)}\b", later_text):
+                changed = True
+                i += 1
+                continue
 
         if (
             (missing_params and not inserted_missing_params)
