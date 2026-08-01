@@ -67,6 +67,8 @@ UNIFORM_LIST_ASSIGN_RE = re.compile(
 )
 PARAM_DEF_RE = re.compile(r"^\s*param\s+(OPT_[A-Za-z0-9_]+)\s*=")
 OPT_REF_RE = re.compile(r"globalParameters\.(OPT_[A-Za-z0-9_]+)")
+MODEL_DEF_RE = re.compile(r"^\s*([A-Z_]*MODEL)\s*=")
+BLUEPRINT_MODEL_REF_RE = re.compile(r"\bwith blueprint\s+([A-Z_]*MODEL)\b")
 BEHAVIOR_DEF_RE = re.compile(
     r"^\s*behavior\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\((?P<params>[^)]*)\):"
 )
@@ -112,6 +114,26 @@ def missing_opt_params(lines):
         if match:
             defs.add(match.group(1))
         refs.update(OPT_REF_RE.findall(code))
+    return sorted(refs - defs)
+
+
+def default_model_value(name: str) -> str:
+    if "PEDESTRIAN" in name or "WALKER" in name:
+        return '"walker.pedestrian.0001"'
+    if "MOTOR" in name or "BIKE" in name:
+        return '"vehicle.yamaha.yzf"'
+    return '"vehicle.audi.tt"'
+
+
+def missing_model_defs(lines):
+    refs = set()
+    defs = set()
+    for line in lines:
+        code = line.split("#", 1)[0]
+        match = MODEL_DEF_RE.match(code)
+        if match:
+            defs.add(match.group(1))
+        refs.update(BLUEPRINT_MODEL_REF_RE.findall(code))
     return sorted(refs - defs)
 
 
@@ -229,15 +251,25 @@ def sanitize_text(text: str) -> str:
     local_behaviors = behavior_signatures(lines)
     offset_vars = offset_vector_vars(lines)
     missing_params = missing_opt_params(lines)
+    missing_models = missing_model_defs(lines)
     inserted_missing_params = False
+    inserted_missing_models = False
     i = 0
     while i < len(lines):
         line = lines[i]
-        if missing_params and not inserted_missing_params and line.startswith("EGO_MODEL"):
+        if (
+            (missing_params and not inserted_missing_params)
+            or (missing_models and not inserted_missing_models)
+        ) and line.startswith("EGO_MODEL"):
             output.append(line)
-            for name in missing_params:
-                output.append(f"param {name} = {default_param_value(name)}")
-            inserted_missing_params = True
+            if missing_models and not inserted_missing_models:
+                for name in missing_models:
+                    output.append(f"{name} = {default_model_value(name)}")
+                inserted_missing_models = True
+            if missing_params and not inserted_missing_params:
+                for name in missing_params:
+                    output.append(f"param {name} = {default_param_value(name)}")
+                inserted_missing_params = True
             changed = True
             i += 1
             continue
@@ -545,9 +577,12 @@ def sanitize_text(text: str) -> str:
     if missing_params and not inserted_missing_params:
         prefix = [f"param {name} = {default_param_value(name)}" for name in missing_params]
         result = "\n".join(prefix + [result])
+    if missing_models and not inserted_missing_models:
+        prefix = [f"{name} = {default_model_value(name)}" for name in missing_models]
+        result = "\n".join(prefix + [result])
     if not result.endswith("\n"):
         result += "\n"
-    return result if changed or (missing_params and not inserted_missing_params) else text
+    return result if changed or (missing_params and not inserted_missing_params) or (missing_models and not inserted_missing_models) else text
 
 
 def sanitize_file(path: Path) -> bool:

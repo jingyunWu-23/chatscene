@@ -4,6 +4,7 @@ param map = localPath(f'../maps/{Town}.xodr')
 param carla_map = Town
 model scenic.simulators.carla.model
 EGO_MODEL = "vehicle.lincoln.mkz_2017"
+PARKED_CAR_MODEL = "vehicle.audi.tt"
 
 behavior AdvBehavior():
     while (distance to self) > 60:
