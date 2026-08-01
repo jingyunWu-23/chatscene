@@ -49,6 +49,12 @@ CENTERLINE_CHAIN_RE = re.compile(
     r"(?P<expr>(?P<base>[A-Za-z_][A-Za-z0-9_]*)\.(?P<field>startLane|endLane|connectingLane))\.centerline"
 )
 CENTERLINE_SIMPLE_RE = re.compile(r"\b(?P<obj>[A-Za-z_][A-Za-z0-9_]*)\.centerline")
+SCALAR_OFFSET_ALONG_RE = re.compile(
+    r"^(?P<prefix>.*\boffset along .+ by )(?P<value>globalParameters\.OPT_[A-Za-z0-9_]+)(?P<tail>\s*,?\s*(?:#.*)?)$"
+)
+UNPARENTHESIZED_OFFSET_VECTOR_RE = re.compile(
+    r"^(?P<prefix>.*\boffset along .+ by )(?P<value>globalParameters\.OPT_[A-Za-z0-9_]+)\s*@\s*0(?P<tail>\s*,?\s*(?:#.*)?)$"
+)
 UNIFORM_LIST_ASSIGN_RE = re.compile(
     r"^(?P<indent>\s*)(?P<target>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*"
     r"Uniform\(\*(?P<source>[A-Za-z_][A-Za-z0-9_]*)\)(?P<tail>\s*(?:#.*)?)$"
@@ -215,6 +221,28 @@ def sanitize_text(text: str) -> str:
             for name in missing_params:
                 output.append(f"param {name} = {default_param_value(name)}")
             inserted_missing_params = True
+            changed = True
+            i += 1
+            continue
+
+        scalar_offset_match = SCALAR_OFFSET_ALONG_RE.match(line)
+        if scalar_offset_match:
+            output.append(
+                f"{scalar_offset_match.group('prefix')}"
+                f"({scalar_offset_match.group('value')} @ 0)"
+                f"{scalar_offset_match.group('tail')}"
+            )
+            changed = True
+            i += 1
+            continue
+
+        offset_vector_match = UNPARENTHESIZED_OFFSET_VECTOR_RE.match(line)
+        if offset_vector_match:
+            output.append(
+                f"{offset_vector_match.group('prefix')}"
+                f"({offset_vector_match.group('value')} @ 0)"
+                f"{offset_vector_match.group('tail')}"
+            )
             changed = True
             i += 1
             continue

@@ -95,7 +95,7 @@ advHeading = advLane.orientation[projectPt]
 lateralShift = globalParameters.OPT_LATERAL_OFFSET @ 0
 # But note: prior snippets use `offset along heading by SHIFT` where SHIFT is a vector in heading-aligned coords.
 # So to get lateral displacement: use `offset along (heading + 90 deg) by globalParameters.OPT_LATERAL_OFFSET`
-AdvSpawnPt = BaseSpawnPt offset along (advHeading + 90 deg) by globalParameters.OPT_LATERAL_OFFSET
+AdvSpawnPt = BaseSpawnPt offset along (advHeading + 90 deg) by (globalParameters.OPT_LATERAL_OFFSET @ 0)
 
 # Ensure final position lies on advLane (optional projection again for robustness)
 if advLane is None:

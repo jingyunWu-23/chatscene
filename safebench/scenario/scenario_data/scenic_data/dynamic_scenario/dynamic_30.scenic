@@ -65,7 +65,7 @@ advHeading = leftLane.orientation[projectPt]
 # Since leftLane orientation may differ, we use advHeading to move forward along that lane
 # Scenic 2.1 supports `offset along heading by d`, so:
 IntSpawnPt = OrientedPoint at projectPt with heading advHeading
-AdvSpawnPt = IntSpawnPt offset along advHeading by globalParameters.OPT_GEO_Y_DISTANCE
+AdvSpawnPt = IntSpawnPt offset along advHeading by (globalParameters.OPT_GEO_Y_DISTANCE @ 0)
 
 # Spawn the Adversarial Agent
 AdvAgent = Car at AdvSpawnPt.position,

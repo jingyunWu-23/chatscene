@@ -58,7 +58,7 @@ require advLane is not None
 IntSpawnPt = advLane.centerline.end
 # Offset backward along the opposite lane's heading (i.e., toward the intersection centerline, but *just before* it)
 param OPT_OPPOSITE_OFFSET = Range(-5, -1)  # meters back from end, placing agent just before centerline
-projectPt = IntSpawnPt offset along IntSpawnPt.heading by globalParameters.OPT_OPPOSITE_OFFSET
+projectPt = IntSpawnPt offset along IntSpawnPt.heading by (globalParameters.OPT_OPPOSITE_OFFSET @ 0)
 
 # Heading must face ego — i.e., opposite to advLane's natural heading (since advLane is opposite-direction lane,
 # its heading points *away* from ego; so we flip it to face ego)

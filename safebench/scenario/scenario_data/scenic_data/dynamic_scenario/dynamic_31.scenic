@@ -42,7 +42,7 @@ advLane = advLaneSec
 param OPT_GEO_X_DISTANCE = Range(5, 20)   # forward distance along ego's heading
 param OPT_GEO_Y_DISTANCE = Range(1, 5)     # rightward lateral offset (positive to right)
 
-IntSpawnPt = egoSpawnPt offset along egoSpawnPt.heading by globalParameters.OPT_GEO_X_DISTANCE
+IntSpawnPt = egoSpawnPt offset along egoSpawnPt.heading by (globalParameters.OPT_GEO_X_DISTANCE @ 0)
 if advLane is None:
     advLane = Uniform(*network.laneSections)
 require advLane is not None
