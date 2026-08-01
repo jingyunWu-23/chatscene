@@ -11,7 +11,10 @@ Description:
 import torch
 import numpy as np
 import cv2
-from moviepy.video.io.ffmpeg_writer import FFMPEG_VideoWriter
+try:
+    from moviepy.video.io.ffmpeg_writer import FFMPEG_VideoWriter
+except ModuleNotFoundError:
+    FFMPEG_VideoWriter = None
 
 
 def CPU(x):

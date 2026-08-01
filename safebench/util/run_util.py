@@ -17,7 +17,10 @@ from fnmatch import fnmatch
 import yaml
 import importlib
 
-from moviepy.video.io.ffmpeg_writer import FFMPEG_VideoWriter
+try:
+    from moviepy.video.io.ffmpeg_writer import FFMPEG_VideoWriter
+except ModuleNotFoundError:
+    FFMPEG_VideoWriter = None
 
 
 class VideoWriter:
@@ -28,6 +31,8 @@ class VideoWriter:
     def add(self, img):
         img = np.asarray(img)
         if self.writer is None:
+            if FFMPEG_VideoWriter is None:
+                raise ModuleNotFoundError("moviepy is required when saving videos.")
             h, w = img.shape[:2]
             self.writer = FFMPEG_VideoWriter(size=(w, h), **self.params)
         if img.dtype in [np.float32, np.float64]:

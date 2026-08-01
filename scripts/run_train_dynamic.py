@@ -7,7 +7,10 @@ Description:
     This work is licensed under the terms of the MIT license.
     For a copy, see <https://opensource.org/licenses/MIT>
 '''
-import setGPU
+try:
+    import setGPU
+except ModuleNotFoundError:
+    pass
 import traceback
 import os
 import os.path as osp
