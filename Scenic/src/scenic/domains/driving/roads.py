@@ -621,6 +621,22 @@ class LaneSection(_ContainsCenterline, LinearElement):
     _slowerLane: Union[LaneSection, None] = None
 
     @property
+    def isStraight(self) -> bool:
+        """Compatibility flag for generated Scenic snippets expecting straight lanes."""
+        segments = getattr(getattr(self, 'centerline', None), 'segments', ())
+        if len(segments) < 2:
+            return True
+
+        def heading(segment):
+            start, end = segment
+            sx, sy = float(start[0]), float(start[1])
+            ex, ey = float(end[0]), float(end[1])
+            return math.atan2(ey - sy, ex - sx)
+
+        angle = geometry.normalizeAngle(heading(segments[-1]) - heading(segments[0]))
+        return abs(angle) <= math.radians(5.0)
+
+    @property
     def laneToLeft(self) -> LaneSection:
         """The adjacent lane of the same type to the left; rejects if there is none."""
         return _rejectIfNonexistent(self._laneToLeft, 'lane to left')

@@ -52,8 +52,13 @@ def add_carla_egg(path: str):
     egg = Path(path).expanduser()
     if not egg.exists():
         raise FileNotFoundError(f"CARLA Python egg not found: {egg}")
-    sys.path.insert(0, str(egg))
-    os.environ["PYTHONPATH"] = f"{egg}{os.pathsep}{os.environ.get('PYTHONPATH', '')}".rstrip(os.pathsep)
+    paths = [egg]
+    if egg.parent.name == "dist" and egg.parent.parent.name == "carla":
+        paths.append(egg.parent.parent)
+    for item in reversed(paths):
+        sys.path.insert(0, str(item))
+    prefix = os.pathsep.join(str(item) for item in paths)
+    os.environ["PYTHONPATH"] = f"{prefix}{os.pathsep}{os.environ.get('PYTHONPATH', '')}".rstrip(os.pathsep)
 
 
 def scenic_files(scenic_dir: Path):
