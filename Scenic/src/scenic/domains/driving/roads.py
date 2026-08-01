@@ -637,6 +637,29 @@ class LaneSection(_ContainsCenterline, LinearElement):
         return abs(angle) <= math.radians(5.0)
 
     @property
+    def curvature(self) -> float:
+        """Approximate signed curvature of the lane section centerline.
+
+        Generated Scenic snippets sometimes use ``laneSec.curvature`` to filter for
+        straight roads. Scenic's lane model does not store one scalar curvature, so
+        approximate it as the net heading change divided by centerline length.
+        """
+        centerline = getattr(self, 'centerline', None)
+        segments = getattr(centerline, 'segments', ())
+        if len(segments) < 2:
+            return 0.0
+
+        def heading(segment):
+            start, end = segment
+            sx, sy = float(start[0]), float(start[1])
+            ex, ey = float(end[0]), float(end[1])
+            return math.atan2(ey - sy, ex - sx)
+
+        angle = geometry.normalizeAngle(heading(segments[-1]) - heading(segments[0]))
+        length = max(float(getattr(centerline, 'length', 0.0)), 1e-6)
+        return angle / length
+
+    @property
     def laneToLeft(self) -> LaneSection:
         """The adjacent lane of the same type to the left; rejects if there is none."""
         return _rejectIfNonexistent(self._laneToLeft, 'lane to left')

@@ -19,6 +19,7 @@ from scenic.core.lazy_eval import valueInContext
 from scenic.core.vectors import Vector, OrientedVector, VectorDistribution, VectorField
 from scenic.core.geometry import _RotatedRectangle
 from scenic.core.geometry import sin, cos, hypot, findMinMax, pointIsInCone, averageVectors
+from scenic.core.geometry import normalizeAngle
 from scenic.core.geometry import headingOfSegment, triangulatePolygon, plotPolygon, polygonUnion
 from scenic.core.type_support import toVector, toScalar
 from scenic.core.utils import cached, cached_property
@@ -685,6 +686,25 @@ class PolylineRegion(Region):
 	@property
 	def length(self):
 		return self.lineString.length
+
+	@property
+	def isStraight(self):
+		"""Whether this polyline is approximately straight.
+
+		This compatibility property is used by generated Scenic snippets which
+		expect centerlines to expose a simple straightness flag.
+		"""
+		if len(self.segments) < 2:
+			return True
+
+		def heading(segment):
+			start, end = segment
+			sx, sy = float(start[0]), float(start[1])
+			ex, ey = float(end[0]), float(end[1])
+			return math.atan2(ey - sy, ex - sx)
+
+		angle = normalizeAngle(heading(self.segments[-1]) - heading(self.segments[0]))
+		return abs(angle) <= math.radians(5.0)
 
 	def getAABB(self):
 		xmin, ymin, xmax, ymax = self.lineString.bounds
